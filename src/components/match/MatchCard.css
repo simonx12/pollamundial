@@ -1,0 +1,191 @@
+.match-card {
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-card:hover {
+  transform: translateY(-2px);
+}
+
+.match-card.live {
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.1);
+}
+
+.match-card.finished {
+  opacity: 0.85;
+}
+
+.match-card.finished:hover {
+  opacity: 1;
+}
+
+/* ─── Header ─── */
+.match-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.match-datetime {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ─── Teams ─── */
+.match-card-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.team-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.team-side.away {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.team-flag {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.vs-badge {
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--panel-hover);
+  padding: 6px 14px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+}
+
+.match-final-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.final-score {
+  font-size: 1.8rem;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  min-width: 28px;
+  text-align: center;
+}
+
+.score-divider {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* ─── Prediction ─── */
+.match-card-prediction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.prediction-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prediction-separator {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ─── Points result ─── */
+.points-result {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.points-result.exact {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent);
+}
+
+.points-result.winner {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+}
+
+.points-result.wrong {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--text-muted);
+}
+
+.your-prediction {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.8;
+  width: 100%;
+  text-align: center;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 480px) {
+  .team-flag {
+    font-size: 1.5rem;
+  }
+  
+  .team-name {
+    font-size: 0.8rem;
+  }
+
+  .final-score {
+    font-size: 1.4rem;
+  }
+
+  .score-input {
+    width: 48px;
+    height: 44px;
+    font-size: 1.4rem;
+  }
+}

@@ -1,0 +1,225 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.page-header h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle { color: var(--text-secondary); font-size: 1.05rem; margin-top: 0.25rem; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.25rem; transition: all 0.3s ease; }
+.stat-card:hover { transform: translateY(-3px); }
+.stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+.stat-value { font-size: 2.2rem; font-weight: 800; font-family: var(--font-display); line-height: 1.1; }
+.stat-value.green { color: var(--accent); }
+.stat-value.blue { color: var(--primary); }
+.stat-value.gold { color: var(--gold); }
+.stat-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+.section-panel { padding: 1.5rem; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+.section-header h2 { font-size: 1.4rem; font-weight: 700; }
+
+.filter-tabs { display: flex; gap: 4px; background: var(--panel-hover); border-radius: 10px; padding: 4px; flex-wrap: wrap; }
+.filter-tab { padding: 8px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-secondary); font-family: var(--font-body); font-weight: 500; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; }
+.filter-tab:hover { color: var(--text-primary); }
+.filter-tab.active { background: var(--primary); color: white; box-shadow: 0 2px 8px var(--primary-glow); }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 2rem; color: var(--text-muted); gap: 1rem; text-align: center; }
+.empty-state .empty-icon { font-size: 3rem; opacity: 0.5; }
+
+.bet-section { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.bet-form { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+.bet-form .input-group { flex: 1; min-width: 150px; }
+.bet-current { display: flex; align-items: center; gap: 0.75rem; }
+.bet-current .amount { font-size: 1.8rem; font-weight: 800; font-family: var(--font-display); color: var(--accent); }
+.bet-current .currency { color: var(--text-muted); font-size: 0.9rem; }
+
+.matches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem; }
+
+/* ─── Leaderboard table ─── */
+.leaderboard-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 4px;
+}
+
+.leaderboard-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.leaderboard-table td {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+}
+
+.leaderboard-table tbody tr {
+  background: var(--panel-hover);
+  transition: all 0.2s;
+}
+
+.leaderboard-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.leaderboard-table tbody tr td:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.leaderboard-table tbody tr td:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
+.rank-cell {
+  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.rank-1 { color: var(--gold); }
+.rank-2 { color: var(--silver); }
+.rank-3 { color: var(--bronze); }
+
+.player-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+}
+
+.points-cell {
+  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.detail-cell {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ─── Top 3 podium ─── */
+.podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 2rem 1rem 1rem;
+}
+
+.podium-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.3s ease;
+}
+
+.podium-item:hover {
+  transform: translateY(-4px);
+}
+
+.podium-avatar {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-family: var(--font-display);
+}
+
+.podium-item.first .podium-avatar {
+  width: 72px;
+  height: 72px;
+  font-size: 1.6rem;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 8px 30px rgba(251, 191, 36, 0.4);
+}
+
+.podium-item.second .podium-avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #d1d5db, #9ca3af);
+  box-shadow: 0 6px 20px rgba(209, 213, 219, 0.3);
+}
+
+.podium-item.third .podium-avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 1.2rem;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
+}
+
+.podium-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.podium-points {
+  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+}
+
+.podium-item.first .podium-points { color: var(--gold); }
+.podium-item.second .podium-points { color: var(--silver); }
+.podium-item.third .podium-points { color: var(--bronze); }
+
+.podium-medal {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .page-header h1 { font-size: 1.6rem; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-value { font-size: 1.6rem; }
+  .matches-grid { grid-template-columns: 1fr; }
+  
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .podium {
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,219 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Trophy, Target, TrendingUp, DollarSign, CalendarDays, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { generateGroupMatches } from '../lib/worldcupData';
+import { getUserPredictions, getAllMatchResults } from '../lib/supabase';
+import { useToast } from '../components/ui/Toast';
+import MatchCard from '../components/match/MatchCard';
+import { savePrediction } from '../lib/supabase';
+import './Pages.css';
+
+const Dashboard = () => {
+  const { user, profile, updateBetAmount } = useAuth();
+  const { addToast } = useToast();
+  const navigate = useNavigate();
+
+  const [predictions, setPredictions] = useState([]);
+  const [results, setResults] = useState([]);
+  const [betInput, setBetInput] = useState('');
+  const [savingBet, setSavingBet] = useState(false);
+
+  const allMatches = useMemo(() => generateGroupMatches(), []);
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  async function loadData() {
+    try {
+      const [preds, res] = await Promise.all([
+        getUserPredictions(user.id).catch(() => []),
+        getAllMatchResults().catch(() => []),
+      ]);
+      setPredictions(preds || []);
+      setResults(res || []);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+    }
+  }
+
+  // Calculate stats
+  const predictionMap = useMemo(() => {
+    const map = {};
+    predictions.forEach((p) => (map[p.match_id] = p));
+    return map;
+  }, [predictions]);
+
+  const resultMap = useMemo(() => {
+    const map = {};
+    results.forEach((r) => (map[r.match_id] = r));
+    return map;
+  }, [results]);
+
+  const totalPoints = useMemo(() => {
+    return predictions.reduce((acc, p) => acc + (p.points_earned || 0), 0);
+  }, [predictions]);
+
+  const exactHits = useMemo(() => {
+    return predictions.filter((p) => p.points_earned === 3).length;
+  }, [predictions]);
+
+  const winnerHits = useMemo(() => {
+    return predictions.filter((p) => p.points_earned === 1).length;
+  }, [predictions]);
+
+  // Get upcoming matches (next 4)
+  const upcomingMatches = useMemo(() => {
+    const now = new Date();
+    return allMatches
+      .filter((m) => new Date(m.date) > now)
+      .slice(0, 4);
+  }, [allMatches]);
+
+  const handleSavePrediction = async (matchId, homeScore, awayScore) => {
+    await savePrediction(user.id, matchId, homeScore, awayScore);
+    addToast('Pronóstico guardado ✓', 'success');
+    loadData();
+  };
+
+  const handleSaveBet = async () => {
+    const amount = parseFloat(betInput);
+    if (isNaN(amount) || amount < 0) {
+      addToast('Ingresa un monto válido', 'error');
+      return;
+    }
+    setSavingBet(true);
+    try {
+      await updateBetAmount(amount);
+      addToast(`Apuesta registrada: $${amount.toLocaleString()}`, 'success');
+      setBetInput('');
+    } catch (err) {
+      addToast('Error al guardar la apuesta', 'error');
+    } finally {
+      setSavingBet(false);
+    }
+  };
+
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 18) return 'Buenas tardes';
+    return 'Buenas noches';
+  };
+
+  return (
+    <div className="page-container">
+      <header className="page-header">
+        <div>
+          <h1>
+            {greeting()}, {profile?.username || 'Jugador'} 👋
+          </h1>
+          <p className="subtitle">
+            Aquí tienes el resumen de tu participación en la polla.
+          </p>
+        </div>
+      </header>
+
+      {/* Stats */}
+      <div className="stats-grid">
+        <div className="stat-card glass-panel animate-in stagger-1">
+          <span className="stat-label">
+            <Trophy size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} />
+            Puntos Totales
+          </span>
+          <div className="stat-value gold">{totalPoints}</div>
+          <p className="stat-desc">{predictions.length} pronósticos realizados</p>
+        </div>
+        <div className="stat-card glass-panel animate-in stagger-2">
+          <span className="stat-label">
+            <Target size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} />
+            Exactos
+          </span>
+          <div className="stat-value green">{exactHits}</div>
+          <p className="stat-desc">+3 puntos cada uno</p>
+        </div>
+        <div className="stat-card glass-panel animate-in stagger-3">
+          <span className="stat-label">
+            <TrendingUp size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} />
+            Ganador Acertado
+          </span>
+          <div className="stat-value blue">{winnerHits}</div>
+          <p className="stat-desc">+1 punto cada uno</p>
+        </div>
+      </div>
+
+      {/* Bet amount */}
+      <div className="bet-section glass-panel animate-in stagger-4">
+        <div className="section-header">
+          <h2>
+            <DollarSign size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
+            Mi Apuesta
+          </h2>
+        </div>
+        <div className="bet-current">
+          <span className="amount">
+            ${profile?.bet_amount?.toLocaleString() || 0}
+          </span>
+          <span className="currency">COP</span>
+        </div>
+        <div className="bet-form">
+          <div className="input-group">
+            <label htmlFor="bet-amount">Actualizar monto</label>
+            <input
+              id="bet-amount"
+              type="number"
+              className="input-field"
+              placeholder="Ej: 20000"
+              value={betInput}
+              onChange={(e) => setBetInput(e.target.value)}
+              min="0"
+            />
+          </div>
+          <button
+            className="btn btn-accent"
+            onClick={handleSaveBet}
+            disabled={savingBet || !betInput}
+          >
+            {savingBet ? 'Guardando...' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Upcoming matches */}
+      <div className="glass-panel section-panel animate-in stagger-5">
+        <div className="section-header">
+          <h2>
+            <CalendarDays size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
+            Próximos Partidos
+          </h2>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/predictions')}>
+            Ver todos <ArrowRight size={14} />
+          </button>
+        </div>
+        {upcomingMatches.length > 0 ? (
+          <div className="matches-grid">
+            {upcomingMatches.map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                prediction={predictionMap[match.id]}
+                result={resultMap[match.id]}
+                onSavePrediction={handleSavePrediction}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <span className="empty-icon">🏟️</span>
+            <p>No hay partidos próximos por ahora.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
