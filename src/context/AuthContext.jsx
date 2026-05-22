@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
@@ -7,30 +7,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Evitar doble llamada a fetchProfile en la inicialización
+  const initialized = useRef(false);
 
   useEffect(() => {
     console.log('🔄 Inicializando AuthContext...');
-    // Obtener sesión actual
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('📦 Sesión obtenida:', session ? 'Usuario logueado' : 'No hay sesión');
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    }).catch(err => {
-      console.error('❌ Error obteniendo sesión:', err);
-      setLoading(false);
-    });
 
-    // Escuchar cambios de sesión
+    // Solo usar onAuthStateChange como fuente única de verdad.
+    // El evento INITIAL_SESSION se dispara inmediatamente con la sesión actual,
+    // por lo que no necesitamos llamar getSession() por separado.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('🔔 Cambio en Auth detectado:', _event);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
+      async (event, session) => {
+        console.log('🔔 Auth event:', event, session ? 'con sesión' : 'sin sesión');
+
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (currentUser) {
+          await fetchProfile(currentUser.id, currentUser.email);
         } else {
           setProfile(null);
           setLoading(false);
@@ -41,7 +35,8 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchProfile(userId) {
+  // fetchProfile recibe userId Y email para no depender del estado async `user`
+  async function fetchProfile(userId, userEmail) {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -50,22 +45,34 @@ export function AuthProvider({ children }) {
         .single();
 
       if (error && error.code === 'PGRST116') {
-        // Perfil no existe, crear uno
-        const { data: newProfile } = await supabase
+        // Perfil no existe → crearlo
+        console.log('📝 Creando perfil para:', userId);
+        const fallbackUsername = userEmail
+          ? userEmail.split('@')[0]
+          : 'jugador';
+
+        const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: userId,
-            username: user?.email?.split('@')[0] || 'jugador',
+            username: fallbackUsername,
             bet_amount: 0,
           })
           .select()
           .single();
-        setProfile(newProfile);
+
+        if (insertError) {
+          console.error('❌ Error creando perfil:', insertError);
+        } else {
+          setProfile(newProfile);
+        }
+      } else if (error) {
+        console.error('❌ Error leyendo perfil:', error);
       } else if (data) {
         setProfile(data);
       }
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.error('❌ Error fetchProfile:', err);
     } finally {
       setLoading(false);
     }
@@ -79,13 +86,14 @@ export function AuthProvider({ children }) {
     });
     if (error) throw error;
 
-    // Crear perfil
+    // Crear perfil inmediatamente (el trigger de onAuthStateChange también lo intentará,
+    // pero con upsert evitamos duplicados)
     if (data.user) {
-      await supabase.from('profiles').insert({
+      await supabase.from('profiles').upsert({
         id: data.user.id,
         username: username || email.split('@')[0],
         bet_amount: 0,
-      });
+      }, { onConflict: 'id' });
     }
     return data;
   }
@@ -128,7 +136,7 @@ export function AuthProvider({ children }) {
         signIn,
         signOut,
         updateBetAmount,
-        refreshProfile: () => user && fetchProfile(user.id),
+        refreshProfile: () => user && fetchProfile(user.id, user.email),
       }}
     >
       {children}
