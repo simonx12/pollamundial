@@ -1,126 +1,147 @@
 /**
- * Datos estáticos del Mundial 2026 (USA, México, Canadá)
- * 48 equipos en 12 grupos de 4
- * Estos datos se usan como fallback si la API no está disponible.
- * Se actualizan automáticamente cuando la API responde.
+ * Datos del Mundial 2026 (USA, México, Canadá)
+ * Conectado dinámicamente al calendario oficial de partidos (worldcup.json)
  */
 
-export const TEAMS = {
-  USA: { name: 'Estados Unidos', flag: '🇺🇸', code: 'USA' },
-  MEX: { name: 'México', flag: '🇲🇽', code: 'MEX' },
-  FRA: { name: 'Francia', flag: '🇫🇷', code: 'FRA' },
-  RSA: { name: 'Sudáfrica', flag: '🇿🇦', code: 'RSA' },
-  BRA: { name: 'Brasil', flag: '🇧🇷', code: 'BRA' },
-  GER: { name: 'Alemania', flag: '🇩🇪', code: 'GER' },
-  JPN: { name: 'Japón', flag: '🇯🇵', code: 'JPN' },
-  NGA: { name: 'Nigeria', flag: '🇳🇬', code: 'NGA' },
-  ARG: { name: 'Argentina', flag: '🇦🇷', code: 'ARG' },
-  ENG: { name: 'Inglaterra', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', code: 'ENG' },
-  KOR: { name: 'Corea del Sur', flag: '🇰🇷', code: 'KOR' },
-  EGY: { name: 'Egipto', flag: '🇪🇬', code: 'EGY' },
-  ESP: { name: 'España', flag: '🇪🇸', code: 'ESP' },
-  NED: { name: 'Países Bajos', flag: '🇳🇱', code: 'NED' },
-  AUS: { name: 'Australia', flag: '🇦🇺', code: 'AUS' },
-  ECU: { name: 'Ecuador', flag: '🇪🇨', code: 'ECU' },
-  POR: { name: 'Portugal', flag: '🇵🇹', code: 'POR' },
-  BEL: { name: 'Bélgica', flag: '🇧🇪', code: 'BEL' },
-  CAN: { name: 'Canadá', flag: '🇨🇦', code: 'CAN' },
-  MAR: { name: 'Marruecos', flag: '🇲🇦', code: 'MAR' },
-  ITA: { name: 'Italia', flag: '🇮🇹', code: 'ITA' },
-  URU: { name: 'Uruguay', flag: '🇺🇾', code: 'URU' },
-  COL: { name: 'Colombia', flag: '🇨🇴', code: 'COL' },
-  CMR: { name: 'Camerún', flag: '🇨🇲', code: 'CMR' },
-  CRO: { name: 'Croacia', flag: '🇭🇷', code: 'CRO' },
-  DEN: { name: 'Dinamarca', flag: '🇩🇰', code: 'DEN' },
-  PER: { name: 'Perú', flag: '🇵🇪', code: 'PER' },
-  KSA: { name: 'Arabia Saudita', flag: '🇸🇦', code: 'KSA' },
-  SRB: { name: 'Serbia', flag: '🇷🇸', code: 'SRB' },
-  SUI: { name: 'Suiza', flag: '🇨🇭', code: 'SUI' },
-  CHL: { name: 'Chile', flag: '🇨🇱', code: 'CHL' },
-  GHA: { name: 'Ghana', flag: '🇬🇭', code: 'GHA' },
-  POL: { name: 'Polonia', flag: '🇵🇱', code: 'POL' },
-  SEN: { name: 'Senegal', flag: '🇸🇳', code: 'SEN' },
-  CRC: { name: 'Costa Rica', flag: '🇨🇷', code: 'CRC' },
-  TUN: { name: 'Túnez', flag: '🇹🇳', code: 'TUN' },
-  SWE: { name: 'Suecia', flag: '🇸🇪', code: 'SWE' },
-  WAL: { name: 'Gales', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿', code: 'WAL' },
-  IRN: { name: 'Irán', flag: '🇮🇷', code: 'IRN' },
-  NZL: { name: 'Nueva Zelanda', flag: '🇳🇿', code: 'NZL' },
-  UKR: { name: 'Ucrania', flag: '🇺🇦', code: 'UKR' },
-  TUR: { name: 'Turquía', flag: '🇹🇷', code: 'TUR' },
-  PAR: { name: 'Paraguay', flag: '🇵🇾', code: 'PAR' },
-  ALG: { name: 'Argelia', flag: '🇩🇿', code: 'ALG' },
-  CZE: { name: 'República Checa', flag: '🇨🇿', code: 'CZE' },
-  NOR: { name: 'Noruega', flag: '🇳🇴', code: 'NOR' },
-  HON: { name: 'Honduras', flag: '🇭🇳', code: 'HON' },
-  QAT: { name: 'Catar', flag: '🇶🇦', code: 'QAT' },
+import worldcupJson from './worldcup.json';
+
+// Mapeo oficial de los 48 equipos del Mundial 2026
+export const TEAM_MAPPING = {
+  "Mexico": { name: "México", flag: "🇲🇽", code: "MEX" },
+  "South Africa": { name: "Sudáfrica", flag: "🇿🇦", code: "RSA" },
+  "South Korea": { name: "Corea del Sur", flag: "🇰🇷", code: "KOR" },
+  "Czech Republic": { name: "República Checa", flag: "🇨🇿", code: "CZE" },
+  "Canada": { name: "Canadá", flag: "🇨🇦", code: "CAN" },
+  "Bosnia & Herzegovina": { name: "Bosnia-Herzegovina", flag: "🇧🇦", code: "BIH" },
+  "Qatar": { name: "Catar", flag: "🇶🇦", code: "QAT" },
+  "Switzerland": { name: "Suiza", flag: "🇨🇭", code: "SUI" },
+  "Brazil": { name: "Brasil", flag: "🇧🇷", code: "BRA" },
+  "Morocco": { name: "Marruecos", flag: "🇲🇦", code: "MAR" },
+  "Haiti": { name: "Haití", flag: "🇭🇹", code: "HAI" },
+  "Scotland": { name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", code: "SCO" },
+  "USA": { name: "Estados Unidos", flag: "🇺🇸", code: "USA" },
+  "Paraguay": { name: "Paraguay", flag: "🇵🇾", code: "PAR" },
+  "Australia": { name: "Australia", flag: "🇦🇺", code: "AUS" },
+  "Turkey": { name: "Turquía", flag: "🇹🇷", code: "TUR" },
+  "Germany": { name: "Alemania", flag: "🇩🇪", code: "GER" },
+  "Curaçao": { name: "Curazao", flag: "🇨🇼", code: "CUW" },
+  "Ivory Coast": { name: "Costa de Marfil", flag: "🇨🇮", code: "CIV" },
+  "Ecuador": { name: "Ecuador", flag: "🇪🇨", code: "ECU" },
+  "Netherlands": { name: "Países Bajos", flag: "🇳🇱", code: "NED" },
+  "Japan": { name: "Japón", flag: "🇯🇵", code: "JPN" },
+  "Sweden": { name: "Suecia", flag: "🇸🇪", code: "SWE" },
+  "Tunisia": { name: "Túnez", flag: "🇹🇳", code: "TUN" },
+  "Belgium": { name: "Bélgica", flag: "🇧🇪", code: "BEL" },
+  "Egypt": { name: "Egipto", flag: "🇪🇬", code: "EGY" },
+  "Iran": { name: "Irán", flag: "🇮🇷", code: "IRN" },
+  "New Zealand": { name: "Nueva Zelanda", flag: "🇳🇿", code: "NZL" },
+  "Spain": { name: "España", flag: "🇪🇸", code: "ESP" },
+  "Cape Verde": { name: "Cabo Verde", flag: "🇨🇻", code: "CPV" },
+  "Saudi Arabia": { name: "Arabia Saudita", flag: "🇸🇦", code: "KSA" },
+  "Uruguay": { name: "Uruguay", flag: "🇺🇾", code: "URU" },
+  "France": { name: "Francia", flag: "🇫🇷", code: "FRA" },
+  "Senegal": { name: "Senegal", flag: "🇸🇳", code: "SEN" },
+  "Iraq": { name: "Irak", flag: "🇮🇶", code: "IRQ" },
+  "Norway": { name: "Noruega", flag: "🇳🇴", code: "NOR" },
+  "Argentina": { name: "Argentina", flag: "🇦🇷", code: "ARG" },
+  "Algeria": { name: "Argelia", flag: "🇩🇿", code: "ALG" },
+  "Austria": { name: "Austria", flag: "🇦🇹", code: "AUT" },
+  "Jordan": { name: "Jordania", flag: "🇯🇴", code: "JOR" },
+  "Portugal": { name: "Portugal", flag: "🇵🇹", code: "POR" },
+  "DR Congo": { name: "R. D. Congo", flag: "🇨🇩", code: "COD" },
+  "Uzbekistan": { name: "Uzbekistán", flag: "🇺🇿", code: "UZB" },
+  "Colombia": { name: "Colombia", flag: "🇨🇴", code: "COL" },
+  "England": { name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", code: "ENG" },
+  "Croatia": { name: "Croacia", flag: "🇭🇷", code: "CRO" },
+  "Ghana": { name: "Ghana", flag: "🇬🇭", code: "GHA" },
+  "Panama": { name: "Panamá", flag: "🇵🇦", code: "PAN" }
 };
 
+// Generar diccionario TEAMS en base a códigos para compatibilidad
+export const TEAMS = {};
+Object.entries(TEAM_MAPPING).forEach(([englishName, teamInfo]) => {
+  TEAMS[teamInfo.code] = teamInfo;
+});
+
+// Inicializar GROUPS
 export const GROUPS = {
-  A: ['USA', 'MEX', 'FRA', 'RSA'],
-  B: ['BRA', 'GER', 'JPN', 'NGA'],
-  C: ['ARG', 'ENG', 'KOR', 'EGY'],
-  D: ['ESP', 'NED', 'AUS', 'ECU'],
-  E: ['POR', 'BEL', 'CAN', 'MAR'],
-  F: ['ITA', 'URU', 'COL', 'CMR'],
-  G: ['CRO', 'DEN', 'PER', 'KSA'],
-  H: ['SRB', 'SUI', 'CHL', 'GHA'],
-  I: ['POL', 'SEN', 'CRC', 'TUN'],
-  J: ['SWE', 'WAL', 'IRN', 'NZL'],
-  K: ['UKR', 'TUR', 'PAR', 'ALG'],
-  L: ['CZE', 'NOR', 'HON', 'QAT'],
+  A: [], B: [], C: [], D: [], E: [], F: [],
+  G: [], H: [], I: [], J: [], K: [], L: []
 };
+
+// Mapear dinámicamente los equipos a sus respectivos grupos oficiales del JSON
+worldcupJson.matches.forEach((match) => {
+  if (match.group) {
+    const groupLetter = match.group.replace('Group ', '');
+    const team1Info = TEAM_MAPPING[match.team1];
+    const team2Info = TEAM_MAPPING[match.team2];
+    
+    if (team1Info && !GROUPS[groupLetter].includes(team1Info.code)) {
+      GROUPS[groupLetter].push(team1Info.code);
+    }
+    if (team2Info && !GROUPS[groupLetter].includes(team2Info.code)) {
+      GROUPS[groupLetter].push(team2Info.code);
+    }
+  }
+});
+
+// Helper para convertir la fecha y hora oficial a formato ISO con su timezone correspondiente
+function parseMatchDateTime(dateStr, timeStr) {
+  const [time, utc] = timeStr.split(' ');
+  let timezoneOffset = 'Z';
+  if (utc && utc.startsWith('UTC')) {
+    const offset = utc.replace('UTC', '');
+    if (offset.startsWith('+') || offset.startsWith('-')) {
+      const hours = Math.abs(parseInt(offset, 10));
+      const formattedHours = String(hours).padStart(2, '0');
+      timezoneOffset = `${offset[0]}${formattedHours}:00`;
+    }
+  }
+  return `${dateStr}T${time}:00${timezoneOffset}`;
+}
 
 /**
- * Genera los partidos de la fase de grupos automáticamente
- * Cada grupo tiene 6 partidos (round-robin de 4 equipos)
+ * Genera los partidos de la fase de grupos dinámicamente desde el archivo oficial
  */
 export function generateGroupMatches() {
   const matches = [];
-  const baseDate = new Date('2026-06-11T18:00:00Z'); // Inicio del mundial
-  let dayOffset = 0;
-  let matchNumber = 1;
+  const groupMatchCounts = {};
 
-  Object.entries(GROUPS).forEach(([groupLetter, teamCodes]) => {
-    // Generar todas las combinaciones de 2 equipos
-    for (let i = 0; i < teamCodes.length; i++) {
-      for (let j = i + 1; j < teamCodes.length; j++) {
-        const home = TEAMS[teamCodes[i]];
-        const away = TEAMS[teamCodes[j]];
-        const matchDate = new Date(baseDate);
-        matchDate.setDate(matchDate.getDate() + dayOffset);
+  worldcupJson.matches.forEach((match) => {
+    if (match.group) {
+      const groupLetter = match.group.replace('Group ', '');
+      const team1Info = TEAM_MAPPING[match.team1] || { name: match.team1, flag: '🏳️', code: 'TBD' };
+      const team2Info = TEAM_MAPPING[match.team2] || { name: match.team2, flag: '🏳️', code: 'TBD' };
 
-        // Alternar horarios
-        const hours = [15, 18, 21];
-        const hourIndex = (matchNumber - 1) % 3;
-        matchDate.setHours(hours[hourIndex], 0, 0, 0);
-
-        matches.push({
-          id: `GS-${groupLetter}-${matchNumber}`,
-          homeTeam: home.name,
-          awayTeam: away.name,
-          homeCode: teamCodes[i],
-          awayCode: teamCodes[j],
-          homeFlag: home.flag,
-          awayFlag: away.flag,
-          date: matchDate.toISOString(),
-          stage: 'GROUP_STAGE',
-          group: `Grupo ${groupLetter}`,
-          status: 'SCHEDULED',
-          homeScore: null,
-          awayScore: null,
-        });
-
-        matchNumber++;
-        if (matchNumber % 4 === 0) dayOffset++;
+      if (!groupMatchCounts[groupLetter]) {
+        groupMatchCounts[groupLetter] = 0;
       }
+      groupMatchCounts[groupLetter]++;
+      const matchNumber = groupMatchCounts[groupLetter];
+
+      matches.push({
+        id: `GS-${groupLetter}-${matchNumber}`,
+        homeTeam: team1Info.name,
+        awayTeam: team2Info.name,
+        homeCode: team1Info.code,
+        awayCode: team2Info.code,
+        homeFlag: team1Info.flag,
+        awayFlag: team2Info.flag,
+        date: parseMatchDateTime(match.date, match.time),
+        stage: 'GROUP_STAGE',
+        group: `Grupo ${groupLetter}`,
+        status: 'SCHEDULED',
+        homeScore: null,
+        awayScore: null,
+        venue: match.ground || '',
+      });
     }
-    dayOffset++;
   });
 
-  return matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return matches;
 }
 
+// Configuración de las etapas de eliminación directa
 export const KNOCKOUT_STAGES = [
   { id: 'R32', name: 'Dieciseisavos', matches: 16 },
   { id: 'R16', name: 'Octavos', matches: 8 },
@@ -129,41 +150,96 @@ export const KNOCKOUT_STAGES = [
   { id: 'F', name: 'Final', matches: 1 },
 ];
 
+const STAGE_MAPPING = {
+  "Round of 32": { stage: "R32", name: "Dieciseisavos" },
+  "Round of 16": { stage: "R16", name: "Octavos" },
+  "Quarter-final": { stage: "QF", name: "Cuartos" },
+  "Semi-final": { stage: "SF", name: "Semifinales" },
+  "Match for third place": { stage: "3RD", name: "Tercer Puesto" },
+  "Final": { stage: "F", name: "Final" }
+};
+
+// Formatea los textos de los placeholders para eliminatorias de TBD a un formato amigable en español
+function formatKnockoutTeam(teamStr) {
+  if (!teamStr) return 'TBD';
+  
+  // E.g. "1A", "2B", "1E"
+  const groupRankMatch = teamStr.match(/^([12])([A-L])$/);
+  if (groupRankMatch) {
+    const rank = groupRankMatch[1];
+    const group = groupRankMatch[2];
+    return `${rank === '1' ? '1°' : '2°'} Grupo ${group}`;
+  }
+  
+  // E.g. "3A/B/C/D/F"
+  const thirdPlaceMatch = teamStr.match(/^3([A-L\/]+)$/);
+  if (thirdPlaceMatch) {
+    return `3° Gr. ${thirdPlaceMatch[1]}`;
+  }
+  
+  // E.g. "W74", "W101" (Winner)
+  const winnerMatch = teamStr.match(/^W(\d+)$/);
+  if (winnerMatch) {
+    return `Ganador P${winnerMatch[1]}`;
+  }
+  
+  // E.g. "L101" (Loser)
+  const loserMatch = teamStr.match(/^L(\d+)$/);
+  if (loserMatch) {
+    return `Perdedor P${loserMatch[1]}`;
+  }
+  
+  return teamStr;
+}
+
 /**
- * Genera los partidos de eliminación directa (placeholders)
+ * Genera los partidos de eliminación directa (knockouts) dinámicamente del archivo oficial
  */
 export function generateKnockoutMatches() {
   const matches = [];
-  const baseDate = new Date('2026-06-28T20:00:00Z'); // Después de grupos
-  let dayOffset = 0;
+  const stageCounts = {};
 
-  KNOCKOUT_STAGES.forEach((stage, stageIdx) => {
-    for (let i = 0; i < stage.matches; i++) {
-      matches.push({
-        id: `KO-${stage.id}-${i + 1}`,
-        homeTeam: `Ganador M${i * 2 + 1}`,
-        awayTeam: `Ganador M${i * 2 + 2}`,
-        homeCode: 'TBD',
-        awayCode: 'TBD',
-        homeFlag: '🏳️',
-        awayFlag: '🏳️',
-        date: new Date(baseDate.getTime() + (dayOffset * 24 * 60 * 60 * 1000)).toISOString(),
-        stage: stage.id,
-        group: stage.name,
-        status: 'SCHEDULED',
-        homeScore: null,
-        awayScore: null,
-      });
-      if (i % 4 === 0) dayOffset++;
+  worldcupJson.matches.forEach((match) => {
+    if (!match.group) {
+      const stageConfig = STAGE_MAPPING[match.round];
+      if (stageConfig) {
+        const stageId = stageConfig.stage;
+        
+        // El bracket del cliente dibuja R16, QF, SF, F. El tercer puesto lo podemos obviar del bracket visual
+        // o mantenerlo por compatibilidad si es necesario.
+        if (stageId === '3RD') return;
+
+        if (!stageCounts[stageId]) {
+          stageCounts[stageId] = 0;
+        }
+        stageCounts[stageId]++;
+        const count = stageCounts[stageId];
+
+        matches.push({
+          id: `KO-${stageId}-${count}`,
+          homeTeam: formatKnockoutTeam(match.team1),
+          awayTeam: formatKnockoutTeam(match.team2),
+          homeCode: match.team1 || 'TBD',
+          awayCode: match.team2 || 'TBD',
+          homeFlag: '🏳️',
+          awayFlag: '🏳️',
+          date: parseMatchDateTime(match.date, match.time),
+          stage: stageId,
+          group: stageConfig.name,
+          status: 'SCHEDULED',
+          homeScore: null,
+          awayScore: null,
+          venue: match.ground || '',
+        });
+      }
     }
-    dayOffset += 2;
   });
 
   return matches;
 }
 
 /**
- * Sistema de puntuación
+ * Sistema de puntuación de la polla
  */
 export const SCORING = {
   EXACT: 3,      // Marcador exacto
