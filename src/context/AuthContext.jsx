@@ -35,8 +35,19 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const lastFetchedUserId = useRef(null);
+  const fetchingUserId = useRef(null);
+
   // fetchProfile recibe userId Y email para no depender del estado async `user`
   async function fetchProfile(userId, userEmail) {
+    // Si ya estamos buscando el perfil de este usuario o ya lo leímos, no hacer nada
+    if (fetchingUserId.current === userId) return;
+    if (lastFetchedUserId.current === userId && profile) {
+      setLoading(false);
+      return;
+    }
+
+    fetchingUserId.current = userId;
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -64,16 +75,19 @@ export function AuthProvider({ children }) {
         if (insertError) {
           console.error('❌ Error creando perfil:', insertError);
         } else {
+          lastFetchedUserId.current = userId;
           setProfile(newProfile);
         }
       } else if (error) {
         console.error('❌ Error leyendo perfil:', error);
       } else if (data) {
+        lastFetchedUserId.current = userId;
         setProfile(data);
       }
     } catch (err) {
       console.error('❌ Error fetchProfile:', err);
     } finally {
+      fetchingUserId.current = null;
       setLoading(false);
     }
   }
@@ -110,6 +124,8 @@ export function AuthProvider({ children }) {
   async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    lastFetchedUserId.current = null;
+    fetchingUserId.current = null;
     setUser(null);
     setProfile(null);
   }
