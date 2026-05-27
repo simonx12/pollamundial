@@ -9,14 +9,24 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   // Evitar doble llamada a fetchProfile en la inicialización
   const initialized = useRef(false);
+  const lastFetchedUserId = useRef(null);
+  const fetchingUserId = useRef(null);
+  const lastProcessedUserId = useRef(null);
 
   useEffect(() => {
     // Solo necesitamos reaccionar a eventos reales de sesión, no a refrescos de token.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // Ignorar eventos que NO cambian la identidad del usuario
-        if (event === 'TOKEN_REFRESHED') return;
-        if (event === 'SIGNED_IN' && lastFetchedUserId.current === session?.user?.id) return;
+        const currentId = session?.user?.id ?? null;
+
+        // Si el usuario es el mismo y ocurre un evento de sesión común, ignorarlo para evitar loop
+        if (currentId !== null && lastProcessedUserId.current === currentId) {
+          if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            return;
+          }
+        }
+
+        lastProcessedUserId.current = currentId;
 
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -33,8 +43,6 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const lastFetchedUserId = useRef(null);
-  const fetchingUserId = useRef(null);
 
   // fetchProfile recibe userId Y email para no depender del estado async `user`
   async function fetchProfile(userId, userEmail) {
