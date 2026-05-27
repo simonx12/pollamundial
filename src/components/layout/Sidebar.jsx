@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarDays, Trophy, LogOut, X, BarChart3 } from 'lucide-react';
+import { Home, CalendarDays, Trophy, LogOut, X, BarChart3, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../ui/ThemeToggle';
 import './Sidebar.css';
@@ -46,6 +46,10 @@ const Sidebar = ({ isOpen, onClose }) => {
           <NavLink to="/bracket" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <Trophy size={20} />
             <span>Cuadro</span>
+          </NavLink>
+          <NavLink to="/results" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <ClipboardList size={20} />
+            <span>Resultados</span>
           </NavLink>
           <NavLink to="/leaderboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <Trophy size={20} />
