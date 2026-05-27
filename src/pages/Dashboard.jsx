@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Target, TrendingUp, DollarSign, CalendarDays, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateGroupMatches } from '../lib/worldcupData';
-import { getUserPredictions, getAllMatchResults } from '../lib/supabase';
+import { getUserPredictions, getAllMatchResults, getLeaderboard, savePrediction } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
-import { savePrediction } from '../lib/supabase';
 import './Pages.css';
 
 const Dashboard = () => {
@@ -16,6 +15,7 @@ const Dashboard = () => {
 
   const [predictions, setPredictions] = useState([]);
   const [results, setResults] = useState([]);
+  const [players, setPlayers] = useState([]);
   const [betInput, setBetInput] = useState('');
   const [savingBet, setSavingBet] = useState(false);
 
@@ -29,12 +29,14 @@ const Dashboard = () => {
 
   async function loadData() {
     try {
-      const [preds, res] = await Promise.all([
+      const [preds, res, leaders] = await Promise.all([
         getUserPredictions(user.id).catch(() => []),
         getAllMatchResults().catch(() => []),
+        getLeaderboard().catch(() => []),
       ]);
       setPredictions(preds || []);
       setResults(res || []);
+      setPlayers(leaders || []);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     }
@@ -64,6 +66,10 @@ const Dashboard = () => {
   const winnerHits = useMemo(() => {
     return predictions.filter((p) => p.points_earned === 1).length;
   }, [predictions]);
+
+  const top3 = useMemo(() => {
+    return players.slice(0, 3);
+  }, [players]);
 
   // Get upcoming matches (next 4)
   const upcomingMatches = useMemo(() => {
@@ -145,8 +151,51 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Top 3 Podium Section */}
+      {top3.length >= 3 && (
+        <div className="glass-panel animate-in stagger-4" style={{ padding: '1.5rem' }}>
+          <div className="section-header" style={{ marginBottom: '0.75rem' }}>
+            <h2>🏆 Líderes de la Polla</h2>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/leaderboard')}>
+              Ver Ranking Completo <ArrowRight size={14} />
+            </button>
+          </div>
+          <div className="podium" style={{ padding: '1rem 0 0' }}>
+            {/* 2nd place */}
+            <div className="podium-item second" style={{ cursor: 'pointer' }} onClick={() => navigate('/leaderboard')}>
+              <span className="podium-medal">🥈</span>
+              <div className="podium-avatar">
+                {top3[1].username?.charAt(0).toUpperCase()}
+              </div>
+              <span className="podium-name">{top3[1].username}</span>
+              <span className="podium-points">{top3[1].total_points} pts</span>
+            </div>
+
+            {/* 1st place */}
+            <div className="podium-item first" style={{ cursor: 'pointer' }} onClick={() => navigate('/leaderboard')}>
+              <span className="podium-medal">🥇</span>
+              <div className="podium-avatar">
+                {top3[0].username?.charAt(0).toUpperCase()}
+              </div>
+              <span className="podium-name">{top3[0].username}</span>
+              <span className="podium-points">{top3[0].total_points} pts</span>
+            </div>
+
+            {/* 3rd place */}
+            <div className="podium-item third" style={{ cursor: 'pointer' }} onClick={() => navigate('/leaderboard')}>
+              <span className="podium-medal">🥉</span>
+              <div className="podium-avatar">
+                {top3[2].username?.charAt(0).toUpperCase()}
+              </div>
+              <span className="podium-name">{top3[2].username}</span>
+              <span className="podium-points">{top3[2].total_points} pts</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bet amount */}
-      <div className="bet-section glass-panel animate-in stagger-4">
+      <div className="bet-section glass-panel animate-in stagger-5">
         <div className="section-header">
           <h2>
             <DollarSign size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
@@ -183,7 +232,7 @@ const Dashboard = () => {
       </div>
 
       {/* Upcoming matches */}
-      <div className="glass-panel section-panel animate-in stagger-5">
+      <div className="glass-panel section-panel animate-in stagger-6">
         <div className="section-header">
           <h2>
             <CalendarDays size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
