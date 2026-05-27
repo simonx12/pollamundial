@@ -11,14 +11,12 @@ export function AuthProvider({ children }) {
   const initialized = useRef(false);
 
   useEffect(() => {
-    console.log('🔄 Inicializando AuthContext...');
-
-    // Solo usar onAuthStateChange como fuente única de verdad.
-    // El evento INITIAL_SESSION se dispara inmediatamente con la sesión actual,
-    // por lo que no necesitamos llamar getSession() por separado.
+    // Solo necesitamos reaccionar a eventos reales de sesión, no a refrescos de token.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔔 Auth event:', event, session ? 'con sesión' : 'sin sesión');
+        // Ignorar eventos que NO cambian la identidad del usuario
+        if (event === 'TOKEN_REFRESHED') return;
+        if (event === 'SIGNED_IN' && lastFetchedUserId.current === session?.user?.id) return;
 
         const currentUser = session?.user ?? null;
         setUser(currentUser);

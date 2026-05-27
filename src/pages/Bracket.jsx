@@ -15,8 +15,8 @@ const Bracket = () => {
   const knockoutMatches = useMemo(() => generateKnockoutMatches(), []);
 
   useEffect(() => {
-    if (user) loadData();
-  }, [user]);
+    if (user?.id) loadData();
+  }, [user?.id]);
 
   async function loadData() {
     try {

@@ -22,10 +22,10 @@ const Dashboard = () => {
   const allMatches = useMemo(() => generateGroupMatches(), []);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadData();
     }
-  }, [user]);
+  }, [user?.id]);
 
   async function loadData() {
     try {

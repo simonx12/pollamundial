@@ -20,8 +20,8 @@ const Predictions = () => {
   const allMatches = useMemo(() => generateGroupMatches(), []);
 
   useEffect(() => {
-    if (user) loadData();
-  }, [user]);
+    if (user?.id) loadData();
+  }, [user?.id]);
 
   async function loadData() {
     try {
