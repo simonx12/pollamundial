@@ -217,6 +217,7 @@ export function generateKnockoutMatches() {
 
         matches.push({
           id: `KO-${stageId}-${count}`,
+          num: match.num || 104,
           homeTeam: formatKnockoutTeam(match.team1),
           awayTeam: formatKnockoutTeam(match.team2),
           homeCode: match.team1 || 'TBD',

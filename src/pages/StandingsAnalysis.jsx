@@ -177,15 +177,35 @@ const StandingsAnalysis = () => {
         code,
         name: TEAMS[code].name,
         flag: TEAMS[code].flag,
-        stageReached: 'Fase de Grupos 📉',
-        colorClass: 'text-muted',
+        stageReached: 'Fase de Grupos ❌',
+        colorClass: 'text-danger',
         rank: 0,
       };
     });
 
-    // Mark qualified teams from Group Stage
+    // 1. Gather all 3rd place teams to find the top 8
+    const thirdPlaceTeams = [];
     Object.entries(groupStandings).forEach(([groupLetter, teams]) => {
-      // Top 2 advance to Round of 32 in the 48-team tournament
+      if (teams[2]) {
+        thirdPlaceTeams.push({
+          ...teams[2],
+          groupLetter,
+        });
+      }
+    });
+
+    // Sort 3rd place teams: Points -> GD -> Goals -> Wins
+    thirdPlaceTeams.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.goals !== a.goals) return b.goals - a.goals;
+      return b.wins - a.wins;
+    });
+
+    const top8ThirdPlaceCodes = thirdPlaceTeams.slice(0, 8).map(t => t.code);
+
+    // Mark qualified teams from Group Stage to Round of 32
+    Object.entries(groupStandings).forEach(([groupLetter, teams]) => {
       if (teams[0]) {
         statusMap[teams[0].code].stageReached = 'Dieciseisavos 🛡️';
         statusMap[teams[0].code].colorClass = 'text-primary';
@@ -196,62 +216,128 @@ const StandingsAnalysis = () => {
         statusMap[teams[1].code].colorClass = 'text-primary';
         statusMap[teams[1].code].rank = 1;
       }
-      // Simulating some 3rd place teams advancing
-      if (teams[2] && (groupLetter.charCodeAt(0) % 2 === 0)) {
+      if (teams[2] && top8ThirdPlaceCodes.includes(teams[2].code)) {
         statusMap[teams[2].code].stageReached = 'Dieciseisavos 🛡️';
         statusMap[teams[2].code].colorClass = 'text-primary';
         statusMap[teams[2].code].rank = 1;
       }
     });
 
-    // Now look at knockout predictions to see who advances further
-    const knockoutMatches = generateKnockoutMatches();
-    
-    // Sort matches by stage hierarchy: R32, R16, QF, SF, F
-    // Note: The knockout data contains static codes like 'TBD' but we can analyze user's predictions
-    // If the user predicted a knockout match, let's map winners.
-    // For a cleaner presentation, let's also pull mock entries for the actual World Cup bracket if the user hasn't completed them,
-    // to give them a gorgeous visualization of how their bracket translates to Winners and Eliminated.
-    
-    const hasKnockoutPreds = userPredictions.some(p => p.match_id.startsWith('KO-'));
-    
-    if (hasKnockoutPreds) {
-      // Let's analyze actual predictions entered
-      // Since knockout matches reference winners, we can track who won each match in predictions.
-      // We will look for predicted final winner, runner up, etc.
-      // Final: KO-F-1
-      const finalPred = predictionMap['KO-F-1'];
-      if (finalPred) {
-        const homeW = finalPred.home_score > finalPred.away_score;
-        // In actual implementation, match homeTeam/awayTeam would be populated.
-        // For custom predictions, we can show what the user predicted.
+    // Helper to resolve the best third place team according to placeholder rules
+    const resolveThirdPlacePlaceholder = (placeholder, top3rdCodes) => {
+      // e.g. "3A/B/C/D/F" -> ["A", "B", "C", "D", "F"]
+      const groupsAllowed = placeholder.replace('3', '').split('/');
+      for (const code of top3rdCodes) {
+        const groupLetter = Object.keys(GROUPS).find(g => GROUPS[g].includes(code));
+        if (groupsAllowed.includes(groupLetter)) {
+          return code;
+        }
       }
-    }
+      return top3rdCodes[0] || null;
+    };
 
-    // High quality representation for demonstration and simulation:
-    // If they have predicted teams, we highlight them.
-    // Let's create a beautiful breakdown of typical favorites and their prediction statuses.
-    const favoriteTeams = [
-      { code: 'ARG', name: 'Argentina', flag: '🇦🇷', stage: 'Campeón Proyectado 🏆', colorClass: 'gold', rank: 6 },
-      { code: 'BRA', name: 'Brasil', flag: '🇧🇷', stage: 'Finalista 🥈', colorClass: 'silver', rank: 5 },
-      { code: 'FRA', name: 'Francia', flag: '🇫🇷', stage: 'Semifinales 🥉', colorClass: 'bronze', rank: 4 },
-      { code: 'ESP', name: 'España', flag: '🇪🇸', stage: 'Semifinales 🥉', colorClass: 'bronze', rank: 4 },
-      { code: 'GER', name: 'Alemania', flag: '🇩🇪', stage: 'Cuartos de Final 📉', colorClass: 'text-primary', rank: 3 },
-      { code: 'COL', name: 'Colombia', flag: '🇨🇴', stage: 'Cuartos de Final 📉', colorClass: 'text-primary', rank: 3 },
-      { code: 'ENG', name: 'Inglaterra', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', stage: 'Octavos de Final 📉', colorClass: 'text-secondary', rank: 2 },
-      { code: 'POR', name: 'Portugal', flag: '🇵🇹', stage: 'Octavos de Final 📉', colorClass: 'text-secondary', rank: 2 },
-      { code: 'MEX', name: 'México', flag: '🇲🇽', stage: 'Dieciseisavos 📉', colorClass: 'text-muted', rank: 1 },
-      { code: 'USA', name: 'Estados Unidos', flag: '🇺🇸', stage: 'Dieciseisavos 📉', colorClass: 'text-muted', rank: 1 },
-      { code: 'ITA', name: 'Italia', flag: '🇮🇹', stage: 'Eliminado en Grupos ❌', colorClass: 'text-danger', rank: 0 },
-      { code: 'URU', name: 'Uruguay', flag: '🇺🇾', stage: 'Eliminado en Grupos ❌', colorClass: 'text-danger', rank: 0 },
-    ];
+    // Now look at knockout predictions to see who advances further
+    const resolvedMatchWinner = {};
+    const sortedKnockoutMatches = generateKnockoutMatches().sort((a, b) => a.num - b.num);
+    
+    sortedKnockoutMatches.forEach(match => {
+      // Helper to resolve a team placeholder to a real team code
+      const resolveTeamCode = (codeStr) => {
+        if (!codeStr || codeStr === 'TBD') return null;
 
-    // Let's merge these favorites with group standings calculation
-    favoriteTeams.forEach(fav => {
-      if (statusMap[fav.code]) {
-        statusMap[fav.code].stageReached = fav.stage;
-        statusMap[fav.code].colorClass = fav.colorClass;
-        statusMap[fav.code].rank = fav.rank;
+        // 1. Group ranks (e.g. "1A", "2B")
+        const groupRankMatch = codeStr.match(/^([12])([A-L])$/);
+        if (groupRankMatch) {
+          const rank = parseInt(groupRankMatch[1], 10);
+          const group = groupRankMatch[2];
+          return groupStandings[group]?.[rank - 1]?.code || null;
+        }
+
+        // 2. Best third places (e.g. "3A/B/C/D/F")
+        if (codeStr.startsWith('3')) {
+          return resolveThirdPlacePlaceholder(codeStr, top8ThirdPlaceCodes);
+        }
+
+        // 3. Winners of previous matches (e.g. "W74")
+        if (codeStr.startsWith('W')) {
+          const prevMatchNum = parseInt(codeStr.substring(1), 10);
+          return resolvedMatchWinner[prevMatchNum] || null;
+        }
+
+        // Default: if it's already a real code, return it
+        return codeStr;
+      };
+
+      const homeRealCode = resolveTeamCode(match.homeCode);
+      const awayRealCode = resolveTeamCode(match.awayCode);
+
+      if (homeRealCode && awayRealCode) {
+        const pred = predictionMap[match.id];
+        
+        if (pred && (pred.home_score !== null && pred.away_score !== null)) {
+          const homeS = pred.home_score;
+          const awayS = pred.away_score;
+          const homeWins = homeS > awayS; // penalties are handled by score here
+          
+          const winnerCode = homeWins ? homeRealCode : awayRealCode;
+          const loserCode = homeWins ? awayRealCode : homeRealCode;
+
+          resolvedMatchWinner[match.num] = winnerCode;
+
+          // Loser is eliminated in this stage
+          const stageNames = {
+            R32: { name: 'Dieciseisavos ❌', color: 'text-muted', rank: 1 },
+            R16: { name: 'Octavos de Final ❌', color: 'text-muted', rank: 2 },
+            QF: { name: 'Cuartos de Final ❌', color: 'text-muted', rank: 3 },
+            SF: { name: 'Semifinales 🥉', color: 'bronze', rank: 4 },
+            F: { name: 'Finalista 🥈', color: 'silver', rank: 5 },
+          };
+
+          const stageInfo = stageNames[match.stage];
+          if (stageInfo && statusMap[loserCode]) {
+            statusMap[loserCode].stageReached = stageInfo.name;
+            statusMap[loserCode].colorClass = stageInfo.color;
+            statusMap[loserCode].rank = stageInfo.rank;
+          }
+
+          // Winner advances
+          const nextStages = {
+            R32: { name: 'Octavos de Final 🔮', color: 'text-secondary', rank: 2 },
+            R16: { name: 'Cuartos de Final 🔮', color: 'text-primary', rank: 3 },
+            QF: { name: 'Semifinales 🥉', color: 'bronze', rank: 4 },
+            SF: { name: 'Finalista 🥈', color: 'silver', rank: 5 },
+            F: { name: 'Campeón Proyectado 🏆', color: 'gold', rank: 6 },
+          };
+
+          const nextInfo = nextStages[match.stage];
+          if (nextInfo && statusMap[winnerCode]) {
+            statusMap[winnerCode].stageReached = nextInfo.name;
+            statusMap[winnerCode].colorClass = nextInfo.color;
+            statusMap[winnerCode].rank = nextInfo.rank;
+          }
+        } else {
+          // No prediction yet, but they are in this stage
+          const entryStages = {
+            R32: { name: 'Dieciseisavos 🛡️', color: 'text-primary', rank: 1 },
+            R16: { name: 'Octavos de Final 🔮', color: 'text-secondary', rank: 2 },
+            QF: { name: 'Cuartos de Final 🔮', color: 'text-primary', rank: 3 },
+            SF: { name: 'Semifinales 🥉', color: 'bronze', rank: 4 },
+            F: { name: 'Finalista 🥈', color: 'silver', rank: 5 },
+          };
+          const entryInfo = entryStages[match.stage];
+          if (entryInfo) {
+            if (statusMap[homeRealCode] && statusMap[homeRealCode].rank < entryInfo.rank) {
+              statusMap[homeRealCode].stageReached = entryInfo.name;
+              statusMap[homeRealCode].colorClass = entryInfo.color;
+              statusMap[homeRealCode].rank = entryInfo.rank;
+            }
+            if (statusMap[awayRealCode] && statusMap[awayRealCode].rank < entryInfo.rank) {
+              statusMap[awayRealCode].stageReached = entryInfo.name;
+              statusMap[awayRealCode].colorClass = entryInfo.color;
+              statusMap[awayRealCode].rank = entryInfo.rank;
+            }
+          }
+        }
       }
     });
 
