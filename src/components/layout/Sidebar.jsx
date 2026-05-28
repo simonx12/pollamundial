@@ -26,12 +26,12 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         <div className="sidebar-header">
           <div className="logo">
-            <div className="logo-icon">⚽</div>
+            <div className="logo-icon">26</div>
             <h1 className="logo-text">
               Polla<span>Mundial</span>
             </h1>
           </div>
-          <p className="logo-tagline">Mundial 2026 🏆</p>
+          <p className="logo-tagline">WE ARE 26 🏆</p>
         </div>
 
         <nav className="sidebar-nav">
