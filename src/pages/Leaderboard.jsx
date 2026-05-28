@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Medal, Target, TrendingUp, X, Eye, ClipboardList } from 'lucide-react';
+import { Trophy, Medal, Target, TrendingUp, X, Eye, ClipboardList, Search } from 'lucide-react';
 import { getLeaderboard, getUserPredictions, getAllMatchResults } from '../lib/supabase';
 import { generateGroupMatches, generateKnockoutMatches } from '../lib/worldcupData';
+import { useAuth } from '../context/AuthContext';
 import './Pages.css';
 
 const Leaderboard = () => {
+  const { user } = useAuth();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Estados para ver predicciones de otros jugadores
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -75,6 +78,12 @@ const Leaderboard = () => {
       setLoadingPreds(false);
     }
   };
+
+  const filteredPlayers = useMemo(() => {
+    if (!searchQuery.trim()) return players;
+    const q = searchQuery.toLowerCase();
+    return players.filter((p) => p.username?.toLowerCase().includes(q));
+  }, [players, searchQuery]);
 
   const totalPot = players.reduce((acc, p) => acc + (p.bet_amount || 0), 0);
   const top3 = players.slice(0, 3);
@@ -161,14 +170,41 @@ const Leaderboard = () => {
 
       {/* Full table */}
       <div className="glass-panel section-panel animate-in stagger-3">
-        <div className="section-header">
-          <h2>
-            <Medal size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
-            Tabla Completa
-          </h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            💡 Haz clic en cualquier jugador para ver sus pronósticos
-          </span>
+        <div className="section-header" style={{ gap: '1rem' }}>
+          <div>
+            <h2>
+              <Medal size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
+              Tabla Completa
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              💡 Haz clic en cualquier jugador para ver sus pronósticos
+            </span>
+          </div>
+          
+          {/* Search bar inside Leaderboard */}
+          <div style={{ position: 'relative', width: '100%', maxWidth: '240px' }}>
+            <Search size={14} style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+            }} />
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Buscar rival..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                paddingLeft: '32px',
+                paddingTop: '6px',
+                paddingBottom: '6px',
+                fontSize: '0.85rem',
+                borderRadius: '8px'
+              }}
+            />
+          </div>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
@@ -189,54 +225,82 @@ const Leaderboard = () => {
               </tr>
             </thead>
             <tbody>
-              {players.map((player, index) => (
-                <tr
-                  key={player.id}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => handleViewUserPredictions(player)}
-                >
-                  <td>
-                    <span className={`rank-cell ${index < 3 ? `rank-${index + 1}` : ''}`}>
-                      {index + 1}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="player-cell">
-                      <div className="player-avatar">
-                        {player.username?.charAt(0).toUpperCase()}
+              {filteredPlayers.map((player, index) => {
+                const isCurrentUser = player.id === user?.id;
+                return (
+                  <tr
+                    key={player.id}
+                    style={{
+                      cursor: 'pointer',
+                      borderLeft: isCurrentUser ? '4px solid var(--primary)' : 'none',
+                      background: isCurrentUser ? 'rgba(0, 240, 255, 0.06)' : ''
+                    }}
+                    onClick={() => handleViewUserPredictions(player)}
+                  >
+                    <td>
+                      <span className={`rank-cell ${index < 3 ? `rank-${index + 1}` : ''}`}>
+                        {index + 1}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="player-cell">
+                        <div className="player-avatar" style={{
+                          background: isCurrentUser ? 'linear-gradient(135deg, var(--primary), var(--accent))' : ''
+                        }}>
+                          {player.username?.charAt(0).toUpperCase()}
+                        </div>
+                        <span style={{ fontWeight: isCurrentUser ? 700 : 600 }}>
+                          {player.username}
+                          {isCurrentUser && (
+                            <span style={{
+                              marginLeft: '8px',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              background: 'var(--primary)',
+                              color: 'var(--text-inverse)',
+                              padding: '2px 6px',
+                              borderRadius: '10px',
+                              textTransform: 'uppercase'
+                            }}>
+                              Tú
+                            </span>
+                          )}
+                        </span>
                       </div>
-                      <span style={{ fontWeight: 600 }}>{player.username}</span>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className="detail-cell">{player.exact_hits}</span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className="detail-cell">{player.winner_hits}</span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className="detail-cell">
-                      ${(player.bet_amount || 0).toLocaleString()}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <button className="btn btn-sm btn-secondary" style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      <Eye size={12} /> Ver
-                    </button>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <span className="points-cell">{player.total_points}</span>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="detail-cell">{player.exact_hits}</span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="detail-cell">{player.winner_hits}</span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="detail-cell">
+                        ${(player.bet_amount || 0).toLocaleString()}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="btn btn-sm btn-secondary" style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Eye size={12} /> Ver
+                      </button>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <span className="points-cell" style={{
+                        color: isCurrentUser ? 'var(--primary)' : ''
+                      }}>{player.total_points}</span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
-        {players.length === 0 && (
+        {filteredPlayers.length === 0 && (
           <div className="empty-state">
             <span className="empty-icon">🏟️</span>
-            <p>Aún no hay participantes registrados.</p>
+            <h3>No se encontraron jugadores</h3>
+            <p>Prueba buscando otro nombre de usuario.</p>
           </div>
         )}
       </div>

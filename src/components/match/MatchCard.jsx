@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Check, Clock, Zap } from 'lucide-react';
+import { Save, Check, Clock, Zap, Lock } from 'lucide-react';
 import './MatchCard.css';
 
 const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) => {
@@ -133,6 +133,18 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
         ) : isFinished && !prediction ? (
           <div className="points-result wrong">
             <span>No apostaste</span>
+          </div>
+        ) : (disabled || isPast) ? (
+          <div className="points-result wrong" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)' }}>
+            <Lock size={14} style={{ marginRight: '4px' }} />
+            <span>Pronóstico Cerrado</span>
+            {prediction ? (
+              <span className="your-prediction" style={{ opacity: 1, fontWeight: 700 }}>
+                Tu marcador final: {prediction.home_score} - {prediction.away_score}
+              </span>
+            ) : (
+              <span className="your-prediction">No ingresaste pronóstico</span>
+            )}
           </div>
         ) : (
           <>
