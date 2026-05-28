@@ -14,19 +14,13 @@ export function AuthProvider({ children }) {
   const lastProcessedUserId = useRef(null);
 
   useEffect(() => {
-    // Solo necesitamos reaccionar a eventos reales de sesión, no a refrescos de token.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const currentId = session?.user?.id ?? null;
+    let active = true;
 
-        // Si el usuario es el mismo y ocurre un evento de sesión común, ignorarlo para evitar loop
-        if (currentId !== null && lastProcessedUserId.current === currentId) {
-          if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            return;
-          }
-        }
-
-        lastProcessedUserId.current = currentId;
+    async function initializeAuth() {
+      try {
+        // Obtener la sesión persistida en caché de Supabase al iniciar la app
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
 
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -37,10 +31,41 @@ export function AuthProvider({ children }) {
           setProfile(null);
           setLoading(false);
         }
+      } catch (err) {
+        console.error('❌ Error al inicializar sesión:', err);
+        if (active) setLoading(false);
+      }
+    }
+
+    initializeAuth();
+
+    // Escuchar eventos futuros de inicio/cierre de sesión
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!active) return;
+
+        const currentUser = session?.user ?? null;
+        const isDifferentUser = currentUser?.id !== lastFetchedUserId.current;
+
+        // Solo reaccionamos si de verdad cambió de usuario (login, logout, cambio de cuenta)
+        // o si se disparó explícitamente un cierre de sesión.
+        if (isDifferentUser || event === 'SIGNED_OUT') {
+          setUser(currentUser);
+          if (currentUser) {
+            await fetchProfile(currentUser.id, currentUser.email);
+          } else {
+            lastFetchedUserId.current = null;
+            setProfile(null);
+            setLoading(false);
+          }
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
 
