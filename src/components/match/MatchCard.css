@@ -152,7 +152,7 @@
 }
 
 .points-result.winner {
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--primary-glow);
   color: var(--primary);
 }
 

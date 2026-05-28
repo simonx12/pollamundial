@@ -5,9 +5,9 @@
    ═══════════════════════════════════════════ */
 :root,
 [data-theme='dark'] {
-  --primary: #4f46e5; /* Índigo eléctrico oficial */
-  --primary-hover: #3730a3;
-  --primary-glow: rgba(79, 70, 229, 0.45);
+  --primary: #8b5cf6; /* Violeta/Morado Neón Eléctrico 2026 */
+  --primary-hover: #7c3aed;
+  --primary-glow: rgba(139, 92, 246, 0.45);
   --accent: #10b981; /* Verde esmeralda fútbol */
   --accent-hover: #059669;
   --accent-glow: rgba(16, 185, 129, 0.4);
@@ -24,8 +24,8 @@
 
   --panel-bg: rgba(15, 23, 42, 0.65);
   --panel-bg-solid: #0f172a;
-  --panel-border: rgba(99, 102, 241, 0.12); /* Borde con tinte índigo mundial */
-  --panel-hover: rgba(99, 102, 241, 0.08);
+  --panel-border: rgba(139, 92, 246, 0.15); /* Borde con tinte violeta mundial */
+  --panel-hover: rgba(139, 92, 246, 0.08);
 
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
@@ -33,19 +33,19 @@
   --text-inverse: #0f172a;
 
   --input-bg: rgba(3, 7, 18, 0.85);
-  --input-border: rgba(99, 102, 241, 0.18);
+  --input-border: rgba(139, 92, 246, 0.18);
   --input-focus: var(--primary);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 35px rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 50px rgba(79, 70, 229, 0.25);
+  --shadow-glow: 0 0 50px rgba(139, 92, 246, 0.25);
 
   --bg-gradient: 
-    radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18), transparent 45%), /* Focos de estadio índigo */
-    radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.14), transparent 50%), /* Verde gramilla iluminada */
-    radial-gradient(circle at 50% 95%, rgba(244, 63, 94, 0.08), transparent 45%),  /* Toque magenta del trofeo */
-    radial-gradient(circle at 80% 85%, rgba(6, 182, 212, 0.12), transparent 40%);  /* Reflejo cian */
+    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.22), transparent 45%), /* Focos de estadio violeta */
+    radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.16), transparent 50%), /* Verde gramilla iluminada */
+    radial-gradient(circle at 50% 95%, rgba(244, 63, 94, 0.1), transparent 45%),   /* Toque magenta del trofeo */
+    radial-gradient(circle at 80% 85%, rgba(6, 182, 212, 0.15), transparent 40%);  /* Reflejo cian */
 
   --font-body: 'Inter', system-ui, sans-serif;
   --font-display: 'Outfit', system-ui, sans-serif;
@@ -55,9 +55,9 @@
    LIGHT THEME (FIFA World Cup 2026 Light Style)
    ═══════════════════════════════════════════ */
 [data-theme='light'] {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-glow: rgba(79, 70, 229, 0.25);
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-glow: rgba(124, 58, 237, 0.25);
   --accent: #059669;
   --accent-glow: rgba(5, 150, 105, 0.25);
   --danger: #e11d48;
@@ -70,8 +70,8 @@
 
   --panel-bg: rgba(255, 255, 255, 0.85);
   --panel-bg-solid: #ffffff;
-  --panel-border: rgba(99, 102, 241, 0.15);
-  --panel-hover: rgba(99, 102, 241, 0.04);
+  --panel-border: rgba(124, 58, 237, 0.15);
+  --panel-hover: rgba(124, 58, 237, 0.04);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -79,16 +79,16 @@
   --text-inverse: #f8fafc;
 
   --input-bg: #ffffff;
-  --input-border: rgba(99, 102, 241, 0.22);
+  --input-border: rgba(124, 58, 237, 0.22);
   --input-focus: var(--primary);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.08);
-  --shadow-glow: 0 0 45px rgba(79, 70, 229, 0.12);
+  --shadow-lg: 0 8px 32px rgba(124, 58, 237, 0.08);
+  --shadow-glow: 0 0 45px rgba(124, 58, 237, 0.12);
 
   --bg-gradient: 
-    radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.07), transparent 45%),
+    radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.07), transparent 45%),
     radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.06), transparent 50%),
     radial-gradient(circle at 50% 95%, rgba(244, 63, 94, 0.03), transparent 40%);
 }
