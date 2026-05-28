@@ -1,75 +1,77 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 /* ═══════════════════════════════════════════
-   DARK THEME (default)
+   DARK THEME (default - FIFA World Cup 2026 Style)
    ═══════════════════════════════════════════ */
 :root,
 [data-theme='dark'] {
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --primary-glow: rgba(59, 130, 246, 0.4);
-  --accent: #10b981;
+  --primary: #4f46e5; /* Índigo eléctrico oficial */
+  --primary-hover: #3730a3;
+  --primary-glow: rgba(79, 70, 229, 0.45);
+  --accent: #10b981; /* Verde esmeralda fútbol */
+  --accent-hover: #059669;
   --accent-glow: rgba(16, 185, 129, 0.4);
-  --danger: #ef4444;
+  --danger: #f43f5e; /* Rojo coral brillante */
   --warning: #f59e0b;
   --gold: #fbbf24;
-  --silver: #d1d5db;
-  --bronze: #d97706;
+  --silver: #e2e8f0;
+  --bronze: #cd7f32;
 
-  --bg-base: #020617;
-  --bg-surface: #0f172a;
-  --bg-elevated: #1e293b;
-  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-base: #030712; /* Fondo de noche de estadio súper oscuro */
+  --bg-surface: #0b0f19;
+  --bg-elevated: #111827;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
 
-  --panel-bg: rgba(30, 41, 59, 0.6);
-  --panel-bg-solid: #1e293b;
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --panel-hover: rgba(255, 255, 255, 0.05);
+  --panel-bg: rgba(15, 23, 42, 0.65);
+  --panel-bg-solid: #0f172a;
+  --panel-border: rgba(99, 102, 241, 0.12); /* Borde con tinte índigo mundial */
+  --panel-hover: rgba(99, 102, 241, 0.08);
 
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --text-inverse: #0f172a;
 
-  --input-bg: rgba(15, 23, 42, 0.8);
-  --input-border: rgba(255, 255, 255, 0.12);
+  --input-bg: rgba(3, 7, 18, 0.85);
+  --input-border: rgba(99, 102, 241, 0.18);
   --input-focus: var(--primary);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 40px var(--primary-glow);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 35px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 50px rgba(79, 70, 229, 0.25);
 
   --bg-gradient: 
-    radial-gradient(ellipse at 15% 50%, rgba(59, 130, 246, 0.12), transparent 50%),
-    radial-gradient(ellipse at 85% 20%, rgba(16, 185, 129, 0.08), transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(139, 92, 246, 0.06), transparent 40%);
+    radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.18), transparent 45%), /* Focos de estadio índigo */
+    radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.14), transparent 50%), /* Verde gramilla iluminada */
+    radial-gradient(circle at 50% 95%, rgba(244, 63, 94, 0.08), transparent 45%),  /* Toque magenta del trofeo */
+    radial-gradient(circle at 80% 85%, rgba(6, 182, 212, 0.12), transparent 40%);  /* Reflejo cian */
 
   --font-body: 'Inter', system-ui, sans-serif;
   --font-display: 'Outfit', system-ui, sans-serif;
 }
 
 /* ═══════════════════════════════════════════
-   LIGHT THEME
+   LIGHT THEME (FIFA World Cup 2026 Light Style)
    ═══════════════════════════════════════════ */
 [data-theme='light'] {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-glow: rgba(37, 99, 235, 0.25);
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-glow: rgba(79, 70, 229, 0.25);
   --accent: #059669;
   --accent-glow: rgba(5, 150, 105, 0.25);
-  --danger: #dc2626;
+  --danger: #e11d48;
   --warning: #d97706;
 
-  --bg-base: #f1f5f9;
+  --bg-base: #f8fafc;
   --bg-surface: #ffffff;
-  --bg-elevated: #f8fafc;
-  --bg-overlay: rgba(0, 0, 0, 0.4);
+  --bg-elevated: #f1f5f9;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
 
   --panel-bg: rgba(255, 255, 255, 0.85);
   --panel-bg-solid: #ffffff;
-  --panel-border: rgba(0, 0, 0, 0.08);
-  --panel-hover: rgba(0, 0, 0, 0.03);
+  --panel-border: rgba(99, 102, 241, 0.15);
+  --panel-hover: rgba(99, 102, 241, 0.04);
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -77,17 +79,18 @@
   --text-inverse: #f8fafc;
 
   --input-bg: #ffffff;
-  --input-border: rgba(0, 0, 0, 0.15);
+  --input-border: rgba(99, 102, 241, 0.22);
   --input-focus: var(--primary);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-glow: 0 0 40px var(--primary-glow);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.08);
+  --shadow-glow: 0 0 45px rgba(79, 70, 229, 0.12);
 
   --bg-gradient: 
-    radial-gradient(ellipse at 15% 50%, rgba(59, 130, 246, 0.06), transparent 50%),
-    radial-gradient(ellipse at 85% 20%, rgba(16, 185, 129, 0.04), transparent 50%);
+    radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.07), transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(16, 185, 129, 0.06), transparent 50%),
+    radial-gradient(circle at 50% 95%, rgba(244, 63, 94, 0.03), transparent 40%);
 }
 
 /* ═══════════════════════════════════════════
@@ -105,6 +108,7 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
   transition: background 0.4s ease, color 0.3s ease;
 }
 
@@ -115,6 +119,33 @@ body::before {
   background: var(--bg-gradient);
   pointer-events: none;
   z-index: 0;
+}
+
+/* Líneas tácticas de fútbol y silueta de la cancha como elemento decorativo premium */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    /* Círculo central */
+    radial-gradient(circle at 50% 50%, transparent 140px, rgba(99, 102, 241, 0.025) 140px, rgba(99, 102, 241, 0.025) 142px, transparent 142px),
+    /* Línea de medio campo */
+    linear-gradient(to right, transparent calc(50% - 1px), rgba(99, 102, 241, 0.025) calc(50% - 1px), rgba(99, 102, 241, 0.025) calc(50% + 1px), transparent calc(50% + 1px)),
+    /* Área chica izquierda */
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.015) 2px, transparent 2px),
+    /* Círculo del área */
+    radial-gradient(circle at 0% 50%, transparent 220px, rgba(99, 102, 241, 0.018) 220px, rgba(99, 102, 241, 0.018) 222px, transparent 222px);
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+}
+
+[data-theme='light'] body::after {
+  background-image: 
+    radial-gradient(circle at 50% 50%, transparent 140px, rgba(99, 102, 241, 0.015) 140px, rgba(99, 102, 241, 0.015) 142px, transparent 142px),
+    linear-gradient(to right, transparent calc(50% - 1px), rgba(99, 102, 241, 0.015) calc(50% - 1px), rgba(99, 102, 241, 0.015) calc(50% + 1px), transparent calc(50% + 1px)),
+    radial-gradient(circle at 0% 50%, transparent 220px, rgba(99, 102, 241, 0.01) 220px, rgba(99, 102, 241, 0.01) 222px, transparent 222px);
 }
 
 #root {
@@ -137,20 +168,22 @@ a {
    ═══════════════════════════════════════════ */
 .glass-panel {
   background: var(--panel-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--panel-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg), inset 0 0 15px rgba(99, 102, 241, 0.04);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .glass-panel:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow-lg), 0 0 25px rgba(99, 102, 241, 0.15), inset 0 0 15px rgba(99, 102, 241, 0.08);
 }
 
 [data-theme='light'] .glass-panel:hover {
-  border-color: rgba(0, 0, 0, 0.12);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(99, 102, 241, 0.08);
 }
 
 /* ═══════════════════════════════════════════
