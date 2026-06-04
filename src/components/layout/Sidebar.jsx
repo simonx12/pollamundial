@@ -77,7 +77,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               <div className="user-info">
                 <span className="user-name">{profile.username}</span>
                 <span className="user-bet">
-                  Apuesta: ${profile.bet_amount?.toLocaleString() || 0}
+                  Apuesta: $20,000
                 </span>
               </div>
             </div>

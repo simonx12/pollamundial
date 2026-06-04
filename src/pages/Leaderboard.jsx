@@ -85,7 +85,7 @@ const Leaderboard = () => {
     return players.filter((p) => p.username?.toLowerCase().includes(q));
   }, [players, searchQuery]);
 
-  const totalPot = players.reduce((acc, p) => acc + (p.bet_amount || 0), 0);
+  const totalPot = players.length * 20000;
   const top3 = players.slice(0, 3);
 
   if (loading) {
@@ -219,7 +219,6 @@ const Leaderboard = () => {
                 <th style={{ textAlign: 'center' }}>
                   <TrendingUp size={12} style={{ verticalAlign: '-1px' }} /> Ganador
                 </th>
-                <th style={{ textAlign: 'center' }}>Apuesta</th>
                 <th style={{ textAlign: 'center' }}>Detalle</th>
                 <th style={{ textAlign: 'right' }}>Puntos</th>
               </tr>
@@ -273,11 +272,6 @@ const Leaderboard = () => {
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span className="detail-cell">{player.winner_hits}</span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className="detail-cell">
-                        ${(player.bet_amount || 0).toLocaleString()}
-                      </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <button className="btn btn-sm btn-secondary" style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>

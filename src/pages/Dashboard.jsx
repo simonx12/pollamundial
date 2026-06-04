@@ -9,15 +9,13 @@ import MatchCard from '../components/match/MatchCard';
 import './Pages.css';
 
 const Dashboard = () => {
-  const { user, profile, updateBetAmount } = useAuth();
+  const { user, profile } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
   const [predictions, setPredictions] = useState([]);
   const [results, setResults] = useState([]);
   const [players, setPlayers] = useState([]);
-  const [betInput, setBetInput] = useState('');
-  const [savingBet, setSavingBet] = useState(false);
 
   const allMatches = useMemo(() => generateGroupMatches(), []);
 
@@ -85,23 +83,6 @@ const Dashboard = () => {
     loadData();
   };
 
-  const handleSaveBet = async () => {
-    const amount = parseFloat(betInput);
-    if (isNaN(amount) || amount < 0) {
-      addToast('Ingresa un monto válido', 'error');
-      return;
-    }
-    setSavingBet(true);
-    try {
-      await updateBetAmount(amount);
-      addToast(`Apuesta registrada: $${amount.toLocaleString()}`, 'success');
-      setBetInput('');
-    } catch (err) {
-      addToast('Error al guardar la apuesta', 'error');
-    } finally {
-      setSavingBet(false);
-    }
-  };
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -194,81 +175,17 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Bet amount */}
+      {/* Bet amount (Fixed) */}
       <div className="bet-section glass-panel animate-in stagger-5">
         <div className="section-header">
           <h2>
             <DollarSign size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
-            Mi Apuesta
+            Apuesta de la Polla
           </h2>
         </div>
         <div className="bet-current">
-          <span className="amount">
-            ${profile?.bet_amount?.toLocaleString() || 0}
-          </span>
-          <span className="currency">COP</span>
-        </div>
-        <div className="bet-form" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className="input-group" style={{ flex: 1, minWidth: '150px' }}>
-              <label htmlFor="bet-amount">Actualizar monto</label>
-              <input
-                id="bet-amount"
-                type="number"
-                className="input-field"
-                placeholder="Ej: 20000"
-                value={betInput}
-                onChange={(e) => setBetInput(e.target.value)}
-                min="0"
-              />
-            </div>
-            <button
-              className="btn btn-accent"
-              onClick={handleSaveBet}
-              disabled={savingBet || !betInput}
-            >
-              {savingBet ? 'Guardando...' : 'Guardar'}
-            </button>
-          </div>
-
-          {/* Quick increase buttons */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {[
-              { label: '+ $10k', value: 10000 },
-              { label: '+ $20k', value: 20000 },
-              { label: '+ $50k', value: 50000 },
-            ].map((q) => (
-              <button
-                key={q.label}
-                className="btn btn-secondary btn-sm"
-                type="button"
-                onClick={() => {
-                  const current = parseFloat(betInput) || 0;
-                  setBetInput((current + q.value).toString());
-                }}
-                style={{ padding: '6px 12px', fontSize: '0.75rem', borderRadius: '8px' }}
-              >
-                {q.label}
-              </button>
-            ))}
-            {betInput && (
-              <button
-                className="btn btn-secondary btn-sm"
-                type="button"
-                onClick={() => setBetInput('')}
-                style={{
-                  padding: '6px 12px',
-                  fontSize: '0.75rem',
-                  borderRadius: '8px',
-                  background: 'rgba(244, 63, 94, 0.1)',
-                  color: 'var(--danger)',
-                  border: '1px solid rgba(244, 63, 94, 0.2)'
-                }}
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
+          <span className="amount">$20,000</span>
+          <span className="currency">COP (Valor único de inscripción)</span>
         </div>
       </div>
 
