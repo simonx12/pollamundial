@@ -70,24 +70,24 @@ export function AuthProvider({ children }) {
 
 
   // fetchProfile recibe userId Y email para no depender del estado async `user`
-  async function fetchProfile(userId, userEmail) {
+  async function fetchProfile(userId, userEmail, force = false) {
     // Si ya estamos buscando el perfil de este usuario o ya lo leímos, no hacer nada
     if (fetchingUserId.current === userId) return;
-    if (lastFetchedUserId.current === userId && profile) {
+    if (!force && lastFetchedUserId.current === userId) {
       setLoading(false);
       return;
     }
 
     fetchingUserId.current = userId;
+    // Guardar el id consultado inmediatamente para evitar re-intentos infinitos si falla la red o escritura
+    lastFetchedUserId.current = userId;
+
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-
-      // Guardar el id consultado inmediatamente para evitar re-intentos infinitos si falla la escritura
-      lastFetchedUserId.current = userId;
 
       if (error && error.code === 'PGRST116') {
         // Perfil no existe → crearlo
@@ -101,7 +101,7 @@ export function AuthProvider({ children }) {
           .insert({
             id: userId,
             username: fallbackUsername,
-            bet_amount: 0,
+            bet_amount: 20000,
           })
           .select()
           .single();
@@ -138,7 +138,7 @@ export function AuthProvider({ children }) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
         username: username || email.split('@')[0],
-        bet_amount: 0,
+        bet_amount: 20000,
       }, { onConflict: 'id' });
     }
     return data;
@@ -184,7 +184,7 @@ export function AuthProvider({ children }) {
         signIn,
         signOut,
         updateBetAmount,
-        refreshProfile: () => user && fetchProfile(user.id, user.email),
+        refreshProfile: () => user && fetchProfile(user.id, user.email, true),
       }}
     >
       {children}
