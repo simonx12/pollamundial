@@ -38,8 +38,22 @@ const Login = () => {
         'User already registered': 'Este correo ya está registrado',
         'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres',
         'Unable to validate email address: invalid format': 'Formato de correo inválido',
+        'Email not confirmed': 'Debes confirmar tu correo electrónico. Revisa tu bandeja de entrada o carpeta de spam.',
+        'Signup requires email verification': 'Registro exitoso. Revisa tu correo para confirmar la cuenta.',
+        'Signup rate limit exceeded': 'Límite de registros superado. Por favor, espera unos minutos e intenta de nuevo.',
+        'Over email send rate limit': 'Límite de envío de correos superado. Por favor, intenta de nuevo en unos minutos.',
+        'Email rate limit exceeded': 'Límite de envío de correos superado. Por favor, intenta de nuevo en unos minutos.'
       };
-      setError(messages[err.message] || err.message);
+      // Traducir mensajes comunes de Supabase si contienen palabras clave
+      let errorMsg = err.message || '';
+      if (errorMsg.includes('Email rate limit') || errorMsg.includes('rate limit')) {
+        errorMsg = 'Límite de solicitudes superado. Por favor, intenta de nuevo en unos minutos.';
+      } else if (errorMsg.includes('confirm')) {
+        errorMsg = 'Debes confirmar tu correo electrónico para poder entrar. Revisa tu spam.';
+      } else {
+        errorMsg = messages[errorMsg] || errorMsg;
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
