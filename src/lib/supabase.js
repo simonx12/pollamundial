@@ -176,3 +176,14 @@ export async function calculatePoints(matchId, realHome, realAway) {
 
   await Promise.all(updates);
 }
+
+/* ─── Audit Logs ─── */
+export async function getAuditLogs() {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('*, profiles(username)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+

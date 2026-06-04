@@ -9,6 +9,7 @@ import Bracket from './pages/Bracket';
 import Leaderboard from './pages/Leaderboard';
 import StandingsAnalysis from './pages/StandingsAnalysis';
 import Results from './pages/Results';
+import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
 import ThemeToggle from './components/ui/ThemeToggle';
 
@@ -56,6 +57,7 @@ function App() {
             <Route path="/results" element={<Results />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/analytics" element={<StandingsAnalysis />} />
+            <Route path="/audit" element={<AuditLogs />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
