@@ -86,6 +86,9 @@ export function AuthProvider({ children }) {
         .eq('id', userId)
         .single();
 
+      // Guardar el id consultado inmediatamente para evitar re-intentos infinitos si falla la escritura
+      lastFetchedUserId.current = userId;
+
       if (error && error.code === 'PGRST116') {
         // Perfil no existe → crearlo
         console.log('📝 Creando perfil para:', userId);
@@ -106,13 +109,11 @@ export function AuthProvider({ children }) {
         if (insertError) {
           console.error('❌ Error creando perfil:', insertError);
         } else {
-          lastFetchedUserId.current = userId;
           setProfile(newProfile);
         }
       } else if (error) {
         console.error('❌ Error leyendo perfil:', error);
       } else if (data) {
-        lastFetchedUserId.current = userId;
         setProfile(data);
       }
     } catch (err) {
