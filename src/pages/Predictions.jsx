@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Printer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateGroupMatches, GROUPS } from '../lib/worldcupData';
 import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/supabase';
@@ -8,7 +8,7 @@ import MatchCard from '../components/match/MatchCard';
 import './Pages.css';
 
 const Predictions = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { addToast } = useToast();
 
   const [predictions, setPredictions] = useState([]);
@@ -91,15 +91,54 @@ const Predictions = () => {
     return { total, predicted, percentage: total > 0 ? Math.round((predicted / total) * 100) : 0 };
   }, [allMatches, predictionMap]);
 
+  const scoringStats = useMemo(() => {
+    let exact = 0;
+    let winner = 0;
+    let wrong = 0;
+    let totalPoints = 0;
+    allMatches.forEach(m => {
+      const pred = predictionMap[m.id];
+      const res = resultMap[m.id];
+      if (res) {
+        if (pred) {
+          const predH = pred.home_score;
+          const predA = pred.away_score;
+          const realH = res.home_score;
+          const realA = res.away_score;
+          if (predH === realH && predA === realA) {
+            exact++;
+            totalPoints += 3;
+          } else if (Math.sign(predH - predA) === Math.sign(realH - realA)) {
+            winner++;
+            totalPoints += 1;
+          } else {
+            wrong++;
+          }
+        } else {
+          wrong++;
+        }
+      }
+    });
+    return { exact, winner, wrong, totalPoints };
+  }, [allMatches, predictionMap, resultMap]);
+
   return (
     <div className="page-container">
-      <header className="page-header">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1>Mis Pronósticos ⚽</h1>
           <p className="subtitle">
             Ingresa y modifica tus predicciones antes de que empiece cada partido.
           </p>
         </div>
+        <button
+          className="btn btn-ghost"
+          onClick={() => window.print()}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Printer size={16} />
+          <span>Exportar PDF</span>
+        </button>
       </header>
 
       {/* Progress bar */}
@@ -203,6 +242,113 @@ const Predictions = () => {
           </div>
         </div>
       )}
+
+      {/* Sección invisible en pantalla, optimizada solo para la impresión PDF */}
+      <div className="print-section">
+        <div className="print-container">
+          <div className="print-header">
+            <h1 className="print-title">🏆 Polla Mundialista 2026 🏆</h1>
+            <p className="print-subtitle">Reporte Completo de Pronósticos - Fase de Grupos</p>
+            <div className="print-meta">
+              <span><strong>Usuario:</strong> {profile?.username || user?.email || 'Jugador'}</span>
+              <span><strong>Fecha de Impresión:</strong> {new Date().toLocaleDateString('es-CO')}</span>
+            </div>
+          </div>
+
+          <div className="print-stats-summary">
+            <div className="print-stat-item">
+              <span className="print-stat-label">Progreso</span>
+              <span className="print-stat-value">{completionStats.predicted} / {completionStats.total} ({completionStats.percentage}%)</span>
+            </div>
+            <div className="print-stat-item">
+              <span className="print-stat-label">Puntos Totales</span>
+              <span className="print-stat-value">{scoringStats.totalPoints} pts</span>
+            </div>
+            <div className="print-stat-item">
+              <span className="print-stat-label">Marcadores Exactos (+3)</span>
+              <span className="print-stat-value">{scoringStats.exact}</span>
+            </div>
+            <div className="print-stat-item">
+              <span className="print-stat-label">Acierto Ganador/Empate (+1)</span>
+              <span className="print-stat-value">{scoringStats.winner}</span>
+            </div>
+          </div>
+
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th style={{ width: '15%', textAlign: 'left' }}>Grupo</th>
+                <th style={{ width: '45%', textAlign: 'left' }}>Partido</th>
+                <th style={{ width: '15%', textAlign: 'center' }}>Tu Pronóstico</th>
+                <th style={{ width: '15%', textAlign: 'center' }}>Resultado Real</th>
+                <th style={{ width: '10%', textAlign: 'center' }}>Puntos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allMatches.map((match) => {
+                const pred = predictionMap[match.id];
+                const res = resultMap[match.id];
+                let pointsText = '-';
+                let pointsClass = 'print-badge-pending';
+                
+                if (res) {
+                  if (pred) {
+                    const predH = pred.home_score;
+                    const predA = pred.away_score;
+                    const realH = res.home_score;
+                    const realA = res.away_score;
+                    if (predH === realH && predA === realA) {
+                      pointsText = '+3 pts';
+                      pointsClass = 'print-badge-exact';
+                    } else if (Math.sign(predH - predA) === Math.sign(realH - realA)) {
+                      pointsText = '+1 pt';
+                      pointsClass = 'print-badge-winner';
+                    } else {
+                      pointsText = '0 pts';
+                      pointsClass = 'print-badge-wrong';
+                    }
+                  } else {
+                    pointsText = '0 pts';
+                    pointsClass = 'print-badge-wrong';
+                  }
+                }
+
+                return (
+                  <tr key={match.id}>
+                    <td>{match.group}</td>
+                    <td>
+                      <span style={{ marginRight: '6px' }}>{match.homeFlag}</span>
+                      <strong>{match.homeTeam}</strong>
+                      <span style={{ margin: '0 8px', color: '#666' }}>vs</span>
+                      <span style={{ marginRight: '6px' }}>{match.awayFlag}</span>
+                      <strong>{match.awayTeam}</strong>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {pred ? (
+                        <strong>{pred.home_score} - {pred.away_score}</strong>
+                      ) : (
+                        <span style={{ color: '#999' }}>-</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      {res ? (
+                        <strong>{res.home_score} - {res.away_score}</strong>
+                      ) : (
+                        <span style={{ color: '#999' }}>Por jugar</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className={`print-badge ${pointsClass}`}>
+                        {pointsText}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

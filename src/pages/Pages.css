@@ -226,3 +226,172 @@
     gap: 0.5rem;
   }
 }
+
+/* ═══════════════════════════════════════════
+   ESTILOS DE IMPRESIÓN (EXPORTAR A PDF)
+   ═══════════════════════════════════════════ */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    font-family: Arial, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Desactivar fondos radiales y patrones */
+  body::before, body::after {
+    display: none !important;
+  }
+  
+  /* Ocultar barra lateral, cabeceras, botones y filtros */
+  .sidebar, 
+  .mobile-header, 
+  .login-theme-toggle,
+  .page-header,
+  .filter-tabs,
+  .glass-panel,
+  .btn,
+  input,
+  button,
+  .search-bar,
+  .matches-grid {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Mostrar la sección optimizada para PDF */
+  .print-section {
+    display: block !important;
+    width: 100% !important;
+  }
+}
+
+.print-section {
+  display: none;
+}
+
+/* ─── Estilos optimizados para PDF ─── */
+.print-container {
+  padding: 10px;
+  color: #000000 !important;
+  background: #ffffff !important;
+}
+
+.print-header {
+  border-bottom: 2px solid #333;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.print-title {
+  font-size: 20pt;
+  font-weight: 800;
+  margin: 0;
+  color: #000000 !important;
+}
+
+.print-subtitle {
+  font-size: 11pt;
+  color: #555555 !important;
+  margin: 4px 0 0 0;
+}
+
+.print-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 9.5pt;
+  color: #444444 !important;
+}
+
+.print-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+  background-color: #f8f9fa !important;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #dddddd;
+}
+
+.print-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.print-stat-label {
+  font-size: 8.5pt;
+  color: #666666 !important;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.print-stat-value {
+  font-size: 13pt;
+  font-weight: 800;
+  color: #000000 !important;
+}
+
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.print-table th, 
+.print-table td {
+  border: 1px solid #cccccc;
+  padding: 6px 8px;
+  font-size: 9pt;
+  color: #000000 !important;
+}
+
+.print-table th {
+  background-color: #eaeaea !important;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 8.5pt;
+}
+
+.print-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 8pt;
+  font-weight: bold;
+  text-align: center;
+}
+
+.print-badge-exact {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+  border: 1px solid #10b981;
+}
+
+.print-badge-winner {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  border: 1px solid #3b82f6;
+}
+
+.print-badge-wrong {
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #ef4444;
+}
+
+.print-badge-pending {
+  background-color: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #9ca3af;
+}
+
+
