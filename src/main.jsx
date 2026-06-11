@@ -13,12 +13,12 @@ if ('serviceWorker' in navigator) {
       console.log('SW Cache Cleaner registered.');
     });
 
-    // Desregistrar activamente cualquier otro SW
+    // Desregistrar activamente TODOS los SW para matar versiones antiguas que se quedaron pegadas
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       for (let registration of registrations) {
-        if (registration.active?.scriptURL && !registration.active.scriptURL.includes('sw.js')) {
-          registration.unregister();
-        }
+        registration.unregister().then(() => {
+          console.log('SW Desregistrado exitosamente');
+        });
       }
     });
   });
