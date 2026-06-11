@@ -5,6 +5,7 @@ import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/s
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
 import { Printer } from 'lucide-react';
+import CountdownBanner, { POLLA_CLOSE_DEADLINE } from '../components/ui/CountdownBanner';
 import './Bracket.css';
 import './Pages.css';
 
@@ -46,6 +47,10 @@ const Bracket = () => {
   }, [results]);
 
   const handleSavePrediction = async (matchId, homeScore, awayScore) => {
+    if (new Date() > POLLA_CLOSE_DEADLINE) {
+      addToast('La polla ya está cerrada.', 'error');
+      return;
+    }
     await savePrediction(user.id, matchId, homeScore, awayScore);
     addToast('Pronóstico guardado ✓', 'success');
     loadData();
@@ -97,6 +102,8 @@ const Bracket = () => {
     return { total, predicted, percentage: total > 0 ? Math.round((predicted / total) * 100) : 0 };
   }, [knockoutMatches, predictionMap]);
 
+  const isClosed = new Date() > POLLA_CLOSE_DEADLINE;
+
   return (
     <div className="page-container bracket-page">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -114,6 +121,8 @@ const Bracket = () => {
         </button>
       </header>
 
+      <CountdownBanner />
+
       <div className="bracket-wrapper">
         <div className="bracket-container">
           {/* R16 onwards to match the user's image style */}
@@ -128,6 +137,7 @@ const Bracket = () => {
                       prediction={predictionMap[match.id]}
                       result={resultMap[match.id]}
                       onSavePrediction={handleSavePrediction}
+                      disabled={isClosed}
                     />
                   </div>
                 ))}
