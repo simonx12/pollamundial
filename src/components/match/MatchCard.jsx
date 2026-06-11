@@ -157,7 +157,7 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
                 max="20"
                 value={homeScore}
                 onChange={(e) => setHomeScore(e.target.value)}
-                disabled={disabled || isPast}
+                disabled={disabled || isLocked}
                 placeholder="0"
               />
               <span className="prediction-separator">-</span>
@@ -168,14 +168,14 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
                 max="20"
                 value={awayScore}
                 onChange={(e) => setAwayScore(e.target.value)}
-                disabled={disabled || isPast}
+                disabled={disabled || isLocked}
                 placeholder="0"
               />
             </div>
             <button
               className={`btn btn-sm ${saved ? 'btn-accent' : 'btn-primary'}`}
               onClick={handleSave}
-              disabled={saving || disabled || isPast || homeScore === '' || awayScore === ''}
+              disabled={saving || disabled || isLocked || homeScore === '' || awayScore === ''}
             >
               {saving && <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />}
               {saved && <Check size={14} />}
