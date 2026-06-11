@@ -5,7 +5,6 @@ import { generateGroupMatches, GROUPS, getMatchMultiplier, calculateMatchPoints 
 import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
-import CountdownBanner, { POLLA_CLOSE_DEADLINE } from '../components/ui/CountdownBanner';
 import './Pages.css';
 
 const Predictions = () => {
@@ -79,10 +78,6 @@ const Predictions = () => {
   }, [allMatches, activeGroup, statusFilter, searchQuery, resultMap]);
 
   const handleSavePrediction = async (matchId, homeScore, awayScore) => {
-    if (new Date() > POLLA_CLOSE_DEADLINE) {
-      addToast('La polla ya está cerrada.', 'error');
-      return;
-    }
     await savePrediction(user.id, matchId, homeScore, awayScore);
     addToast('Pronóstico guardado ✓', 'success');
     loadData();
@@ -125,8 +120,6 @@ const Predictions = () => {
     return { exact, winner, wrong, totalPoints };
   }, [allMatches, predictionMap, resultMap]);
 
-  const isClosed = new Date() > POLLA_CLOSE_DEADLINE;
-
   return (
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -145,8 +138,6 @@ const Predictions = () => {
           <span>Exportar PDF</span>
         </button>
       </header>
-
-      <CountdownBanner />
 
       {/* Progress bar */}
       <div className="glass-panel" style={{ padding: '1.25rem' }}>
@@ -237,7 +228,6 @@ const Predictions = () => {
                 prediction={predictionMap[match.id]}
                 result={resultMap[match.id]}
                 onSavePrediction={handleSavePrediction}
-                disabled={isClosed}
               />
             </div>
           ))}

@@ -6,7 +6,6 @@ import { generateGroupMatches, getMatchMultiplier } from '../lib/worldcupData';
 import { getUserPredictions, getAllMatchResults, getLeaderboard, savePrediction } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
-import CountdownBanner from '../components/ui/CountdownBanner';
 import './Pages.css';
 
 const Dashboard = () => {
@@ -121,8 +120,6 @@ const Dashboard = () => {
           </p>
         </div>
       </header>
-
-      <CountdownBanner />
 
       {/* Stats */}
       <div className="stats-grid">

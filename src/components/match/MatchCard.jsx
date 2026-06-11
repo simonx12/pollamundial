@@ -31,9 +31,10 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
   };
 
   const matchDate = new Date(match.date);
+  const deadline = new Date(matchDate.getTime() - 30 * 60000); // 30 minutes before match
   const isFinished = match.status === 'FINISHED' || result;
   const isLive = ['LIVE', 'IN_PLAY', 'PAUSED'].includes(match.status);
-  const isPast = matchDate < new Date() && !isLive;
+  const isLocked = new Date() > deadline;
 
   const formatDate = (date) => {
     const now = new Date();
@@ -134,7 +135,7 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
           <div className="points-result wrong">
             <span>No apostaste</span>
           </div>
-        ) : (disabled || isPast) ? (
+        ) : (disabled || isLocked) ? (
           <div className="points-result wrong" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)' }}>
             <Lock size={14} style={{ marginRight: '4px' }} />
             <span>Pronóstico Cerrado</span>
