@@ -17,6 +17,14 @@ export function AuthProvider({ children }) {
     let active = true;
 
     async function initializeAuth() {
+      // Safety timeout: nunca quedar atrapado cargando por más de 5 segundos
+      const timeoutId = setTimeout(() => {
+        if (active) {
+          console.warn('⚠️ initializeAuth timeout: Forzando fin de carga');
+          setLoading(false);
+        }
+      }, 5000);
+
       try {
         // Obtener la sesión persistida en caché de Supabase al iniciar la app
         const { data: { session } } = await supabase.auth.getSession();
@@ -34,6 +42,8 @@ export function AuthProvider({ children }) {
       } catch (err) {
         console.error('❌ Error al inicializar sesión:', err);
         if (active) setLoading(false);
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 
