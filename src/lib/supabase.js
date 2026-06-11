@@ -151,30 +151,9 @@ export async function getLeaderboard() {
 
 /* ─── Calcular puntos después de un resultado ─── */
 export async function calculatePoints(matchId, realHome, realAway) {
-  const { data: predictions, error } = await supabase
-    .from('predictions')
-    .select('*')
-    .eq('match_id', matchId);
-  if (error) throw error;
-
-  const updates = predictions.map((pred) => {
-    let points = 0;
-    if (pred.home_score === realHome && pred.away_score === realAway) {
-      points = 3; // Marcador exacto
-    } else {
-      const predResult = Math.sign(pred.home_score - pred.away_score);
-      const realResult = Math.sign(realHome - realAway);
-      if (predResult === realResult) {
-        points = 1; // Acertó ganador o empate
-      }
-    }
-    return supabase
-      .from('predictions')
-      .update({ points_earned: points })
-      .eq('id', pred.id);
-  });
-
-  await Promise.all(updates);
+  // Los puntos ahora se calculan automáticamente en el servidor (Supabase)
+  // mediante un trigger de base de datos para evitar errores de permisos (403 RLS) en el cliente.
+  return true;
 }
 
 /* ─── Audit Logs ─── */
