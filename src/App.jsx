@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
+import { syncLiveResultsToSupabase } from './lib/footballApi';
 import Sidebar from './components/layout/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Predictions from './pages/Predictions';
@@ -16,6 +17,15 @@ import ThemeToggle from './components/ui/ThemeToggle';
 function App() {
   const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      // Sincronización automática en segundo plano al cargar el sitio (con throttle de 2 min)
+      syncLiveResultsToSupabase(false).catch((err) =>
+        console.error('App background results sync error:', err)
+      );
+    }
+  }, [user]);
 
   // Loading screen
   if (loading) {

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getMatchMultiplier } from './worldcupData';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -121,10 +122,10 @@ export async function getLeaderboard() {
     .order('username');
   if (error) throw error;
 
-  // Obtener todas las predicciones con puntos
+  // Obtener todas las predicciones con puntos y match_id
   const { data: predictions, error: predError } = await supabase
     .from('predictions')
-    .select('user_id, points_earned');
+    .select('user_id, match_id, points_earned');
   if (predError) throw predError;
 
   // Calcular puntos totales por usuario
@@ -134,8 +135,14 @@ export async function getLeaderboard() {
   predictions.forEach((p) => {
     if (p.points_earned != null) {
       pointsMap[p.user_id] = (pointsMap[p.user_id] || 0) + p.points_earned;
-      if (p.points_earned === 3) exactMap[p.user_id] = (exactMap[p.user_id] || 0) + 1;
-      if (p.points_earned === 1) winnerMap[p.user_id] = (winnerMap[p.user_id] || 0) + 1;
+      const mult = getMatchMultiplier(p.match_id);
+      
+      // Clasificar tipos de aciertos basándose en los puntos y multiplicador
+      if (p.points_earned === 5 * mult) {
+        exactMap[p.user_id] = (exactMap[p.user_id] || 0) + 1;
+      } else if (p.points_earned === 3 * mult || p.points_earned === 1 * mult) {
+        winnerMap[p.user_id] = (winnerMap[p.user_id] || 0) + 1;
+      }
     }
   });
 

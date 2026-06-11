@@ -240,18 +240,44 @@ export function generateKnockoutMatches() {
 }
 
 /**
- * Sistema de puntuación de la polla
+ * Sistema de puntuación de la polla (Nueva regla 5-3-1 y multiplicadores por fase)
  */
 export const SCORING = {
-  EXACT: 3,      // Marcador exacto
-  WINNER: 1,     // Acertó ganador o empate
-  WRONG: 0,      // Falló
+  EXACT: 5,        // Marcador exacto
+  DIFFERENCE: 3,   // Ganador + diferencia exacta
+  WINNER: 1,       // Solo ganador o empate
+  WRONG: 0,        // Falló
 };
 
-export function calculateMatchPoints(predHome, predAway, realHome, realAway) {
-  if (predHome === realHome && predAway === realAway) return SCORING.EXACT;
+export function getMatchMultiplier(matchId) {
+  if (!matchId) return 1;
+  if (matchId.startsWith('GS-')) return 1;
+  if (matchId.startsWith('KO-R32-')) return 2;
+  if (matchId.startsWith('KO-R16-')) return 2;
+  if (matchId.startsWith('KO-QF-')) return 2;
+  if (matchId.startsWith('KO-SF-')) return 3;
+  if (matchId.startsWith('KO-3RD-')) return 3;
+  if (matchId.startsWith('KO-F-')) return 4;
+  return 1;
+}
+
+export function calculateMatchPoints(matchId, predHome, predAway, realHome, realAway) {
+  const multiplier = getMatchMultiplier(matchId);
+  
+  if (predHome === realHome && predAway === realAway) {
+    return SCORING.EXACT * multiplier;
+  }
+  
   const predResult = Math.sign(predHome - predAway);
   const realResult = Math.sign(realHome - realAway);
-  if (predResult === realResult) return SCORING.WINNER;
+  
+  if (predResult === realResult) {
+    // Only apply difference points if there is a winner (not a draw)
+    if (predResult !== 0 && (predHome - predAway) === (realHome - realAway)) {
+      return SCORING.DIFFERENCE * multiplier;
+    }
+    return SCORING.WINNER * multiplier;
+  }
+  
   return SCORING.WRONG;
 }

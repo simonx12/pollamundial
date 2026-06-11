@@ -55,7 +55,21 @@ RETURNS TRIGGER AS $$
 DECLARE
     pred_row RECORD;
     calculated_points INTEGER;
+    multiplier INTEGER;
 BEGIN
+    -- Determinar el multiplicador de la fase basándose en el prefijo del match_id
+    IF NEW.match_id LIKE 'GS-%' THEN
+        multiplier := 1;
+    ELSIF NEW.match_id LIKE 'KO-R32-%' OR NEW.match_id LIKE 'KO-R16-%' OR NEW.match_id LIKE 'KO-QF-%' THEN
+        multiplier := 2;
+    ELSIF NEW.match_id LIKE 'KO-SF-%' OR NEW.match_id LIKE 'KO-3RD-%' THEN
+        multiplier := 3;
+    ELSIF NEW.match_id LIKE 'KO-F-%' THEN
+        multiplier := 4;
+    ELSE
+        multiplier := 1;
+    END IF;
+
     -- Buscar todas las predicciones para el partido que cambió
     FOR pred_row IN 
         SELECT id, home_score, away_score 
@@ -64,9 +78,11 @@ BEGIN
     LOOP
         -- Calcular puntos obtenidos
         IF pred_row.home_score = NEW.home_score AND pred_row.away_score = NEW.away_score THEN
-            calculated_points := 3; -- Marcador exacto
+            calculated_points := 5 * multiplier; -- Marcador exacto
+        ELSIF (pred_row.home_score - pred_row.away_score) = (NEW.home_score - NEW.away_score) AND sign(pred_row.home_score - pred_row.away_score) = sign(NEW.home_score - NEW.away_score) THEN
+            calculated_points := 3 * multiplier; -- Ganador + diferencia exacta
         ELSIF sign(pred_row.home_score - pred_row.away_score) = sign(NEW.home_score - NEW.away_score) THEN
-            calculated_points := 1; -- Acertó ganador o empate
+            calculated_points := 1 * multiplier; -- Solo ganador o empate
         ELSE
             calculated_points := 0; -- Falló
         END IF;
@@ -91,40 +107,51 @@ FOR EACH ROW EXECUTE FUNCTION calculate_predictions_points_on_result();
 -- ─────────────────────────────────────────────────────────────────────
 -- 4. TRIGGERS DE REGISTRO EN LA BITÁCORA DE AUDITORÍA
 -- ─────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION process_audit_log()
+CREATE OR REPLACE FUNCTION process_predictions_audit_log()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_record_id TEXT;
 BEGIN
-    IF (TG_OP = 'INSERT') THEN
+    IF (TG_OP = 'DELETE') THEN
+        v_record_id := OLD.user_id::text || '_' || OLD.match_id::text;
+        INSERT INTO audit_logs (table_name, action, record_id, old_data, performed_by)
+        VALUES ('predictions', 'DELETE', v_record_id, to_jsonb(OLD), auth.uid());
+        RETURN OLD;
+    ELSIF (TG_OP = 'INSERT') THEN
+        v_record_id := NEW.user_id::text || '_' || NEW.match_id::text;
         INSERT INTO audit_logs (table_name, action, record_id, new_data, performed_by)
-        VALUES (
-            TG_TABLE_NAME,
-            'INSERT',
-            COALESCE(NEW.id::text, (NEW.user_id::text || '_' || NEW.match_id::text)),
-            to_jsonb(NEW),
-            auth.uid()
-        );
+        VALUES ('predictions', 'INSERT', v_record_id, to_jsonb(NEW), auth.uid());
         RETURN NEW;
     ELSIF (TG_OP = 'UPDATE') THEN
+        v_record_id := NEW.user_id::text || '_' || NEW.match_id::text;
         INSERT INTO audit_logs (table_name, action, record_id, old_data, new_data, performed_by)
-        VALUES (
-            TG_TABLE_NAME,
-            'UPDATE',
-            COALESCE(NEW.id::text, (NEW.user_id::text || '_' || NEW.match_id::text)),
-            to_jsonb(OLD),
-            to_jsonb(NEW),
-            auth.uid()
-        );
+        VALUES ('predictions', 'UPDATE', v_record_id, to_jsonb(OLD), to_jsonb(NEW), auth.uid());
         RETURN NEW;
-    ELSIF (TG_OP = 'DELETE') THEN
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION process_match_results_audit_log()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_record_id TEXT;
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        v_record_id := OLD.match_id;
         INSERT INTO audit_logs (table_name, action, record_id, old_data, performed_by)
-        VALUES (
-            TG_TABLE_NAME,
-            'DELETE',
-            COALESCE(OLD.id::text, (OLD.user_id::text || '_' || OLD.match_id::text)),
-            to_jsonb(OLD),
-            auth.uid()
-        );
+        VALUES ('match_results', 'DELETE', v_record_id, to_jsonb(OLD), auth.uid());
         RETURN OLD;
+    ELSIF (TG_OP = 'INSERT') THEN
+        v_record_id := NEW.match_id;
+        INSERT INTO audit_logs (table_name, action, record_id, new_data, performed_by)
+        VALUES ('match_results', 'INSERT', v_record_id, to_jsonb(NEW), auth.uid());
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        v_record_id := NEW.match_id;
+        INSERT INTO audit_logs (table_name, action, record_id, old_data, new_data, performed_by)
+        VALUES ('match_results', 'UPDATE', v_record_id, to_jsonb(OLD), to_jsonb(NEW), auth.uid());
+        RETURN NEW;
     END IF;
     RETURN NULL;
 END;
@@ -134,9 +161,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS predictions_audit_trigger ON predictions;
 CREATE TRIGGER predictions_audit_trigger
 AFTER INSERT OR UPDATE OR DELETE ON predictions
-FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+FOR EACH ROW EXECUTE FUNCTION process_predictions_audit_log();
 
 DROP TRIGGER IF EXISTS match_results_audit_trigger ON match_results;
 CREATE TRIGGER match_results_audit_trigger
 AFTER INSERT OR UPDATE OR DELETE ON match_results
-FOR EACH ROW EXECUTE FUNCTION process_audit_log();
+FOR EACH ROW EXECUTE FUNCTION process_match_results_audit_log();

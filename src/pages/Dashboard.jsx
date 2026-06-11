@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Target, TrendingUp, DollarSign, CalendarDays, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateGroupMatches } from '../lib/worldcupData';
+import { generateGroupMatches, getMatchMultiplier } from '../lib/worldcupData';
 import { getUserPredictions, getAllMatchResults, getLeaderboard, savePrediction } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
@@ -20,13 +20,8 @@ const Dashboard = () => {
 
   const allMatches = useMemo(() => generateGroupMatches(), []);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadData();
-    }
-  }, [user?.id]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
+    if (!user?.id) return;
     try {
       const [preds, res, leaders] = await Promise.all([
         getUserPredictions(user.id).catch(() => []),
@@ -39,7 +34,23 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     }
-  }
+  }, [user?.id]);
+
+  // Initial load
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Auto-refresh every 45 seconds
+  const intervalRef = useRef(null);
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      loadData();
+    }, 45000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [loadData]);
 
   // Calculate stats
   const predictionMap = useMemo(() => {
@@ -59,11 +70,17 @@ const Dashboard = () => {
   }, [predictions]);
 
   const exactHits = useMemo(() => {
-    return predictions.filter((p) => p.points_earned === 3).length;
+    return predictions.filter((p) => {
+      const mult = getMatchMultiplier(p.match_id);
+      return p.points_earned === 5 * mult;
+    }).length;
   }, [predictions]);
 
   const winnerHits = useMemo(() => {
-    return predictions.filter((p) => p.points_earned === 1).length;
+    return predictions.filter((p) => {
+      const mult = getMatchMultiplier(p.match_id);
+      return p.points_earned === 3 * mult || p.points_earned === 1 * mult;
+    }).length;
   }, [predictions]);
 
   const top3 = useMemo(() => {
@@ -123,15 +140,15 @@ const Dashboard = () => {
             Exactos
           </span>
           <div className="stat-value green">{exactHits}</div>
-          <p className="stat-desc">+3 puntos cada uno</p>
+          <p className="stat-desc">5 pts base × fase</p>
         </div>
         <div className="stat-card glass-panel animate-in stagger-3">
           <span className="stat-label">
             <TrendingUp size={14} style={{ verticalAlign: '-2px', marginRight: '4px' }} />
-            Ganador Acertado
+            Ganador / Diferencia
           </span>
           <div className="stat-value blue">{winnerHits}</div>
-          <p className="stat-desc">+1 punto cada uno</p>
+          <p className="stat-desc">1 o 3 pts base × fase</p>
         </div>
       </div>
 

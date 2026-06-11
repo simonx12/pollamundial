@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { generateKnockoutMatches } from '../lib/worldcupData';
+import { generateKnockoutMatches, getMatchMultiplier, calculateMatchPoints } from '../lib/worldcupData';
 import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
@@ -75,16 +75,14 @@ const Bracket = () => {
       const res = resultMap[m.id];
       if (res) {
         if (pred) {
-          const predH = pred.home_score;
-          const predA = pred.away_score;
-          const realH = res.home_score;
-          const realA = res.away_score;
-          if (predH === realH && predA === realA) {
+          const pts = calculateMatchPoints(m.id, pred.home_score, pred.away_score, res.home_score, res.away_score);
+          const mult = getMatchMultiplier(m.id);
+          
+          totalPoints += pts;
+          if (pts === 5 * mult) {
             exact++;
-            totalPoints += 3;
-          } else if (Math.sign(predH - predA) === Math.sign(realH - realA)) {
+          } else if (pts === 3 * mult || pts === 1 * mult) {
             winner++;
-            totalPoints += 1;
           } else {
             wrong++;
           }
@@ -197,15 +195,16 @@ const Bracket = () => {
                 
                 if (res) {
                   if (pred) {
-                    const predH = pred.home_score;
-                    const predA = pred.away_score;
-                    const realH = res.home_score;
-                    const realA = res.away_score;
-                    if (predH === realH && predA === realA) {
-                      pointsText = '+3 pts';
+                    const pts = calculateMatchPoints(match.id, pred.home_score, pred.away_score, res.home_score, res.away_score);
+                    const mult = getMatchMultiplier(match.id);
+                    if (pts === 5 * mult) {
+                      pointsText = `+${5 * mult} pts`;
                       pointsClass = 'print-badge-exact';
-                    } else if (Math.sign(predH - predA) === Math.sign(realH - realA)) {
-                      pointsText = '+1 pt';
+                    } else if (pts === 3 * mult) {
+                      pointsText = `+${3 * mult} pts`;
+                      pointsClass = 'print-badge-exact'; // Or distinct style
+                    } else if (pts === 1 * mult) {
+                      pointsText = `+${1 * mult} pt${mult > 1 ? 's' : ''}`;
                       pointsClass = 'print-badge-winner';
                     } else {
                       pointsText = '0 pts';

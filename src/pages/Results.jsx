@@ -1,24 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, RotateCw, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Search, RotateCw, CheckCircle, Clock, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateGroupMatches, generateKnockoutMatches, GROUPS } from '../lib/worldcupData';
 import { getAllMatchResults, saveMatchResult, calculatePoints } from '../lib/supabase';
-import { syncMatchesFromApi } from '../lib/footballApi';
+import { syncLiveResultsToSupabase, getLiveScoreboard } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
 import MatchResultCard from '../components/match/MatchResultCard';
 import './Pages.css';
+
+const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
 
 const Results = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
 
   const [results, setResults] = useState([]);
-  const [activeStage, setActiveStage] = useState('ALL'); // ALL, GROUP_STAGE, R32, R16, QF, SF, F
+  const [activeStage, setActiveStage] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, WITH_RESULT, NO_RESULT
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [syncing, setSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [secondsAgo, setSecondsAgo] = useState(null);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const intervalRef = useRef(null);
+  const tickRef = useRef(null);
 
-  // Cargar todos los partidos (Grupos + Eliminatorias)
   const allMatches = useMemo(() => {
     return [
       ...generateGroupMatches(),
@@ -26,18 +32,63 @@ const Results = () => {
     ];
   }, []);
 
-  useEffect(() => {
-    loadResults();
-  }, []);
-
-  async function loadResults() {
+  const loadResults = useCallback(async () => {
     try {
       const res = await getAllMatchResults().catch(() => []);
       setResults(res || []);
     } catch (err) {
       console.error('Error loading real match results:', err);
     }
-  }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadResults();
+  }, [loadResults]);
+
+  // Auto-sync: silently sync with ESPN every 60s and reload results
+  useEffect(() => {
+    // Initial auto-sync on mount
+    const initialSync = async () => {
+      const res = await syncLiveResultsToSupabase(false).catch(() => ({ success: false }));
+      if (res.success) {
+        setLastSyncTime(Date.now());
+        if (res.updatedCount > 0) {
+          loadResults();
+        }
+      }
+    };
+    initialSync();
+
+    if (autoSyncEnabled) {
+      intervalRef.current = setInterval(async () => {
+        console.log('🔄 Auto-sync en progreso...');
+        const res = await syncLiveResultsToSupabase(true).catch(() => ({ success: false }));
+        if (res.success) {
+          setLastSyncTime(Date.now());
+          if (res.updatedCount > 0) {
+            loadResults();
+          }
+        }
+      }, AUTO_REFRESH_INTERVAL);
+    }
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [autoSyncEnabled, loadResults]);
+
+  // Update "seconds ago" ticker
+  useEffect(() => {
+    tickRef.current = setInterval(() => {
+      if (lastSyncTime) {
+        setSecondsAgo(Math.floor((Date.now() - lastSyncTime) / 1000));
+      }
+    }, 1000);
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, [lastSyncTime]);
 
   const resultMap = useMemo(() => {
     const map = {};
@@ -48,7 +99,6 @@ const Results = () => {
   const filteredMatches = useMemo(() => {
     let matches = allMatches;
 
-    // Stage filter
     if (activeStage !== 'ALL') {
       if (activeStage === 'GROUP_STAGE') {
         matches = matches.filter((m) => m.stage === 'GROUP_STAGE');
@@ -57,14 +107,12 @@ const Results = () => {
       }
     }
 
-    // Status filter
     if (statusFilter === 'WITH_RESULT') {
       matches = matches.filter((m) => resultMap[m.id]);
     } else if (statusFilter === 'NO_RESULT') {
       matches = matches.filter((m) => !resultMap[m.id]);
     }
 
-    // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       matches = matches.filter(
@@ -80,12 +128,8 @@ const Results = () => {
 
   const handleSaveResult = async (matchId, homeScore, awayScore) => {
     try {
-      // 1. Guardar resultado real en Supabase
       await saveMatchResult(matchId, homeScore, awayScore, 'FINISHED');
-      
-      // 2. Recalcular los puntos de todos los usuarios
       await calculatePoints(matchId, homeScore, awayScore);
-      
       addToast('Resultado cargado y puntos recalculados ✓', 'success');
       loadResults();
     } catch (err) {
@@ -97,31 +141,22 @@ const Results = () => {
   const handleApiSync = async () => {
     setSyncing(true);
     try {
-      const apiMatches = await syncMatchesFromApi();
-      if (!apiMatches) {
-        addToast(
-          'No se pudo conectar con football-data.org. Ingresa los resultados manualmente.',
-          'warning'
-        );
-        return;
+      const res = await syncLiveResultsToSupabase(true);
+      if (res.success) {
+        setLastSyncTime(Date.now());
+        if (res.updatedCount > 0) {
+          addToast(`Sincronización completa: ${res.updatedCount} partidos actualizados ✓`, 'success');
+        } else {
+          addToast('Sincronización completa: No hay nuevos cambios ✓', 'info');
+        }
+        loadResults();
+      } else {
+        if (res.reason === 'THROTTLED') {
+          addToast('Por favor espera unos segundos entre sincronizaciones.', 'warning');
+        } else {
+          addToast('Error al conectar con la API de resultados.', 'error');
+        }
       }
-
-      const finishedMatches = apiMatches.filter((m) => m.status === 'FINISHED');
-      if (finishedMatches.length === 0) {
-        addToast('No hay nuevos partidos finalizados en la API.', 'info');
-        return;
-      }
-
-      let count = 0;
-      for (const m of finishedMatches) {
-        // Mapear id de la API al ID interno si corresponde
-        // Nota: en esta polla los partidos usan IDs estáticos GS-A-1, etc.
-        // Sincronizar automáticamente requiere match_mapping o usar los resultados manuales.
-        // Daremos soporte manual premium y explicamos la sincronización.
-      }
-
-      addToast('Sincronización completa ✓', 'success');
-      loadResults();
     } catch (err) {
       console.error('Sync error:', err);
       addToast('Error al sincronizar resultados con la API', 'error');
@@ -141,24 +176,64 @@ const Results = () => {
     };
   }, [allMatches, results]);
 
+  const formatSecondsAgo = (s) => {
+    if (s === null) return '';
+    if (s < 5) return 'ahora mismo';
+    if (s < 60) return `hace ${s}s`;
+    const m = Math.floor(s / 60);
+    return `hace ${m}min`;
+  };
+
   return (
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1>Resultados Reales 🏆</h1>
           <p className="subtitle">
-            Ingresa y visualiza los marcadores oficiales de los partidos de la Copa Mundial 2026.
+            Marcadores oficiales de la Copa Mundial 2026 — actualizados en tiempo real.
           </p>
         </div>
-        <button
-          className="btn btn-secondary"
-          onClick={handleApiSync}
-          disabled={syncing}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          <RotateCw size={16} className={syncing ? 'animate-spin' : ''} />
-          {syncing ? 'Sincronizando...' : 'Sincronizar API'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {/* Live sync indicator */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.75rem',
+            color: autoSyncEnabled ? 'var(--accent)' : 'var(--text-muted)',
+            cursor: 'pointer',
+            padding: '4px 10px',
+            borderRadius: '20px',
+            background: autoSyncEnabled ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${autoSyncEnabled ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+            transition: 'all 0.2s ease',
+          }} onClick={() => setAutoSyncEnabled(!autoSyncEnabled)} title={autoSyncEnabled ? 'Auto-sync activo (click para desactivar)' : 'Auto-sync desactivado (click para activar)'}>
+            {autoSyncEnabled ? (
+              <>
+                <Wifi size={12} />
+                <span style={{ fontWeight: 600 }}>LIVE</span>
+                {secondsAgo !== null && (
+                  <span style={{ color: 'var(--text-muted)' }}>· {formatSecondsAgo(secondsAgo)}</span>
+                )}
+              </>
+            ) : (
+              <>
+                <WifiOff size={12} />
+                <span>Auto-sync OFF</span>
+              </>
+            )}
+          </div>
+
+          <button
+            className="btn btn-secondary"
+            onClick={handleApiSync}
+            disabled={syncing}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <RotateCw size={16} className={syncing ? 'animate-spin' : ''} />
+            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </button>
+        </div>
       </header>
 
       {/* Stats Cards */}
@@ -180,19 +255,18 @@ const Results = () => {
         </div>
       </div>
 
-      {/* Info Warning Banner */}
+      {/* Info Banner */}
       <div className="glass-panel animate-in stagger-2" style={{ padding: '1rem', display: 'flex', gap: '12px', alignItems: 'center', borderLeft: '4px solid var(--accent)' }}>
         <AlertTriangle size={24} style={{ color: 'var(--accent)', flexShrink: 0 }} />
         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-          <strong>Modo Administrador/Simulador activo:</strong> Puedes rellenar los marcadores de cualquier partido en tiempo real. 
-          Al darle <strong>"Guardar Real"</strong>, el sistema recalculará automáticamente los puntos de todos los jugadores 
-          según sus pronósticos guardados y actualizará la tabla de posiciones al instante.
+          <strong>Sincronización automática activa:</strong> Los resultados se actualizan automáticamente 
+          desde la ESPN cada 60 segundos. También puedes ingresar marcadores manualmente con 
+          <strong> "Guardar Real"</strong> — el sistema recalculará los puntos de todos al instante.
         </p>
       </div>
 
       {/* Filters */}
       <div className="glass-panel animate-in stagger-3" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Search */}
         <div style={{ position: 'relative' }}>
           <Search size={16} style={{
             position: 'absolute',
@@ -211,9 +285,7 @@ const Results = () => {
           />
         </div>
 
-        {/* Stage and Status Filters Row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-          {/* Stage Tabs */}
           <div className="filter-tabs">
             {[
               { key: 'ALL', label: 'Todas las fases' },
@@ -234,7 +306,6 @@ const Results = () => {
             ))}
           </div>
 
-          {/* Status Tabs */}
           <div className="filter-tabs">
             {[
               { key: 'ALL', label: 'Todos' },

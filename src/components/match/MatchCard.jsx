@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Check, Clock, Zap, Lock } from 'lucide-react';
+import { calculateMatchPoints, getMatchMultiplier } from '../../lib/worldcupData';
 import './MatchCard.css';
 
 const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) => {
@@ -58,21 +59,24 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
   };
 
   // Calculate points if match is finished
+  const multiplier = getMatchMultiplier(match.id);
   let pointsEarned = null;
   if (isFinished && result && prediction) {
-    const realH = result.home_score;
-    const realA = result.away_score;
-    const predH = prediction.home_score;
-    const predA = prediction.away_score;
-    
-    if (predH === realH && predA === realA) {
-      pointsEarned = 3;
-    } else {
-      const predResult = Math.sign(predH - predA);
-      const realResult = Math.sign(realH - realA);
-      pointsEarned = predResult === realResult ? 1 : 0;
-    }
+    pointsEarned = calculateMatchPoints(
+      match.id,
+      prediction.home_score,
+      prediction.away_score,
+      result.home_score,
+      result.away_score
+    );
   }
+
+  const getPointsLabel = () => {
+    if (pointsEarned === 5 * multiplier) return `¡Exacto! +${5 * multiplier} pts`;
+    if (pointsEarned === 3 * multiplier) return `Diferencia +${3 * multiplier} pts`;
+    if (pointsEarned === 1 * multiplier) return `Ganador +${1 * multiplier} pt${multiplier > 1 ? 's' : ''}`;
+    return '0 pts';
+  };
 
   return (
     <div className={`match-card glass-panel ${isFinished ? 'finished' : ''} ${isLive ? 'live' : ''}`}>
@@ -117,13 +121,9 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
       {/* Prediction input */}
       <div className="match-card-prediction">
         {isFinished && pointsEarned !== null ? (
-          <div className={`points-result ${pointsEarned === 3 ? 'exact' : pointsEarned === 1 ? 'winner' : 'wrong'}`}>
+          <div className={`points-result ${pointsEarned === 5 * multiplier ? 'exact' : pointsEarned === 3 * multiplier ? 'difference' : pointsEarned === 1 * multiplier ? 'winner' : 'wrong'}`}>
             <Zap size={16} />
-            <span>
-              {pointsEarned === 3 && '¡Exacto! +3 pts'}
-              {pointsEarned === 1 && 'Ganador +1 pt'}
-              {pointsEarned === 0 && 'Sin puntos'}
-            </span>
+            <span>{getPointsLabel()}</span>
             {prediction && (
               <span className="your-prediction">
                 Tu pronóstico: {prediction.home_score} - {prediction.away_score}

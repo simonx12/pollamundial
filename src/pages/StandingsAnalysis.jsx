@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Users, TrendingUp, HelpCircle, Shield, Award, AlertCircle, RefreshCw, BarChart2 } from 'lucide-react';
 import { getLeaderboard, getAllMatchResults, getUserPredictions } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { generateGroupMatches, generateKnockoutMatches, TEAMS, GROUPS } from '../lib/worldcupData';
+import { generateGroupMatches, generateKnockoutMatches, TEAMS, GROUPS, getMatchMultiplier } from '../lib/worldcupData';
 import './Pages.css';
 
 const StandingsAnalysis = () => {
@@ -36,10 +36,13 @@ const StandingsAnalysis = () => {
     }
   }
 
-  // TOTAL Matches in the World Cup = 72 (groups) + 31 (knockout) = 103 matches
-  const totalMatches = 103;
-  const finishedMatchesCount = results.length;
-  const remainingMatchesCount = Math.max(0, totalMatches - finishedMatchesCount);
+  // Partidos estáticos de referencia (Grupos + Eliminatorias)
+  const allMatches = useMemo(() => {
+    return [
+      ...generateGroupMatches(),
+      ...generateKnockoutMatches(),
+    ];
+  }, []);
 
   // Fallback demo data if no players exist or loading failed
   const displayPlayers = useMemo(() => {
@@ -58,8 +61,26 @@ const StandingsAnalysis = () => {
     ];
   }, [players]);
 
-  const finishedCountForCalc = finishedMatchesCount || 78; // Mock 78 finished matches if zero, to show realistic elimination calculations
-  const remainingCountForCalc = finishedMatchesCount === 0 ? 25 : remainingMatchesCount;
+  const matchStats = useMemo(() => {
+    const total = allMatches.length;
+    const finished = results.length;
+    const remaining = total - finished;
+    
+    const resultMap = {};
+    results.forEach(r => {
+      resultMap[r.match_id] = r;
+    });
+
+    const remainingMatchesList = allMatches.filter(m => !resultMap[m.id]);
+    const maxPointsRemaining = remainingMatchesList.reduce((sum, m) => sum + (5 * getMatchMultiplier(m.id)), 0);
+
+    return {
+      total,
+      finished,
+      remaining,
+      maxPointsRemaining
+    };
+  }, [allMatches, results]);
 
   // Calculate player chances
   const playerChances = useMemo(() => {
@@ -68,7 +89,7 @@ const StandingsAnalysis = () => {
     const leaderPoints = displayPlayers[0].total_points;
 
     return displayPlayers.map((player, index) => {
-      const maxPossiblePoints = player.total_points + (remainingCountForCalc * 3);
+      const maxPossiblePoints = player.total_points + matchStats.maxPointsRemaining;
       
       let status = 'IN_THE_FIGHT'; // 'LEADER', 'IN_THE_FIGHT', 'ELIMINATED'
       if (index === 0) {
@@ -83,7 +104,7 @@ const StandingsAnalysis = () => {
         status,
       };
     });
-  }, [displayPlayers, remainingCountForCalc]);
+  }, [displayPlayers, matchStats.maxPointsRemaining]);
 
   // Group Stage analysis (based on current user predictions)
   const groupStandings = useMemo(() => {
@@ -394,18 +415,18 @@ const StandingsAnalysis = () => {
           <div className="stats-grid" style={{ marginBottom: '2rem' }}>
             <div className="stat-card glass-panel" style={{ padding: '1.25rem' }}>
               <span className="stat-label">Partidos Jugados</span>
-              <div className="stat-value blue" style={{ fontSize: '1.8rem' }}>{finishedCountForCalc} / 103</div>
+              <div className="stat-value blue" style={{ fontSize: '1.8rem' }}>{matchStats.finished} / {matchStats.total}</div>
               <p className="stat-desc">Fase de grupos + Eliminatorias</p>
             </div>
             <div className="stat-card glass-panel" style={{ padding: '1.25rem' }}>
               <span className="stat-label">Partidos por Jugar</span>
-              <div className="stat-value green" style={{ fontSize: '1.8rem' }}>{remainingCountForCalc}</div>
-              <p className="stat-desc">Cada partido otorga hasta 3 pts</p>
+              <div className="stat-value green" style={{ fontSize: '1.8rem' }}>{matchStats.remaining}</div>
+              <p className="stat-desc">Multiplicadores por fase activos</p>
             </div>
             <div className="stat-card glass-panel" style={{ padding: '1.25rem' }}>
               <span className="stat-label">Máximos Puntos en Juego</span>
-              <div className="stat-value gold" style={{ fontSize: '1.8rem' }}>+{remainingCountForCalc * 3} pts</div>
-              <p className="stat-desc">Para un pronóstico 100% exacto</p>
+              <div className="stat-value gold" style={{ fontSize: '1.8rem' }}>+{matchStats.maxPointsRemaining} pts</div>
+              <p className="stat-desc">5 pts base × fase × partido</p>
             </div>
           </div>
 

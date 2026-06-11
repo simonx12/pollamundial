@@ -1,21 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Trophy, Medal, Target, TrendingUp, X, Eye, ClipboardList, Search } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Trophy, Medal, Target, TrendingUp, X, Eye, ClipboardList, Search, RefreshCw } from 'lucide-react';
 import { getLeaderboard, getUserPredictions, getAllMatchResults } from '../lib/supabase';
-import { generateGroupMatches, generateKnockoutMatches } from '../lib/worldcupData';
+import { generateGroupMatches, generateKnockoutMatches, calculateMatchPoints, getMatchMultiplier } from '../lib/worldcupData';
 import { useAuth } from '../context/AuthContext';
 import './Pages.css';
+
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds for leaderboard
 
 const Leaderboard = () => {
   const { user } = useAuth();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [secondsAgo, setSecondsAgo] = useState(null);
 
   // Estados para ver predicciones de otros jugadores
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [selectedPredictions, setSelectedPredictions] = useState([]);
   const [realResults, setRealResults] = useState([]);
   const [loadingPreds, setLoadingPreds] = useState(false);
+
+  const intervalRef = useRef(null);
+  const tickRef = useRef(null);
 
   // Partidos estáticos de referencia
   const allMatches = useMemo(() => {
@@ -31,34 +38,49 @@ const Leaderboard = () => {
     return map;
   }, [allMatches]);
 
-  useEffect(() => {
-    loadLeaderboard();
-  }, []);
-
-  async function loadLeaderboard() {
-    setLoading(true);
+  const loadLeaderboard = useCallback(async (showLoading = false) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await getLeaderboard();
       setPlayers(data || []);
+      setLastRefresh(Date.now());
       
-      // Cargar resultados reales por si quieren ver el detalle de predicciones
+      // Cargar resultados reales
       const results = await getAllMatchResults().catch(() => []);
       setRealResults(results || []);
     } catch (err) {
       console.error('Error loading leaderboard:', err);
-      // Demo data si hay error de conexión
-      const mockPlayers = [
-        { id: '1', username: 'Simón', total_points: 45, exact_hits: 8, winner_hits: 15, bet_amount: 20000 },
-        { id: '2', username: 'Carlos', total_points: 38, exact_hits: 6, winner_hits: 14, bet_amount: 20000 },
-        { id: '3', username: 'María', total_points: 35, exact_hits: 5, winner_hits: 15, bet_amount: 20000 },
-        { id: '4', username: 'Andrés', total_points: 32, exact_hits: 4, winner_hits: 16, bet_amount: 20000 },
-        { id: '5', username: 'Laura', total_points: 28, exact_hits: 3, winner_hits: 16, bet_amount: 20000 },
-      ];
-      setPlayers(mockPlayers);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
-  }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadLeaderboard(true);
+  }, [loadLeaderboard]);
+
+  // Auto-refresh every 30s
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      loadLeaderboard(false);
+    }, AUTO_REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [loadLeaderboard]);
+
+  // Seconds ago ticker
+  useEffect(() => {
+    tickRef.current = setInterval(() => {
+      if (lastRefresh) {
+        setSecondsAgo(Math.floor((Date.now() - lastRefresh) / 1000));
+      }
+    }, 1000);
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
+  }, [lastRefresh]);
 
   const resultMap = useMemo(() => {
     const map = {};
@@ -88,6 +110,14 @@ const Leaderboard = () => {
   const totalPot = players.length * 20000;
   const top3 = players.slice(0, 3);
 
+  const formatSecondsAgo = (s) => {
+    if (s === null) return '';
+    if (s < 5) return 'ahora';
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    return `${m}min`;
+  };
+
   if (loading) {
     return (
       <div className="page-container">
@@ -101,12 +131,37 @@ const Leaderboard = () => {
 
   return (
     <div className="page-container">
-      <header className="page-header">
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1>Ranking Global 🏆</h1>
           <p className="subtitle">
             Mira quién lidera la polla mundialista y explora las predicciones de tus rivales.
           </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {secondsAgo !== null && (
+            <span style={{
+              fontSize: '0.7rem',
+              color: 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '3px 8px',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+              Actualizado {formatSecondsAgo(secondsAgo)}
+            </span>
+          )}
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => loadLeaderboard(false)}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px' }}
+          >
+            <RefreshCw size={14} />
+          </button>
         </div>
       </header>
 
@@ -378,19 +433,24 @@ const Leaderboard = () => {
                   const hasResult = !!result;
 
                   // Calcular puntos locales
+                  const multiplier = getMatchMultiplier(pred.match_id);
                   let pts = 0;
                   if (hasResult) {
-                    const realH = result.home_score;
-                    const realA = result.away_score;
-                    const predH = pred.home_score;
-                    const predA = pred.away_score;
-
-                    if (predH === realH && predA === realA) {
-                      pts = 3;
-                    } else if (Math.sign(predH - predA) === Math.sign(realH - realA)) {
-                      pts = 1;
-                    }
+                    pts = calculateMatchPoints(
+                      pred.match_id,
+                      pred.home_score,
+                      pred.away_score,
+                      result.home_score,
+                      result.away_score
+                    );
                   }
+
+                  const getPointsLabel = () => {
+                    if (pts === 5 * multiplier) return `¡Exacto! +${5 * multiplier} pts`;
+                    if (pts === 3 * multiplier) return `Diferencia +${3 * multiplier} pts`;
+                    if (pts === 1 * multiplier) return `Ganador +${1 * multiplier} pt${multiplier > 1 ? 's' : ''}`;
+                    return '0 pts';
+                  };
 
                   return (
                     <div
@@ -411,12 +471,12 @@ const Leaderboard = () => {
                         {hasResult ? (
                           <span style={{
                             fontWeight: 700,
-                            color: pts === 3 ? 'var(--accent)' : pts === 1 ? 'var(--primary)' : 'var(--text-muted)',
-                            background: pts === 3 ? 'rgba(16, 185, 129, 0.15)' : pts === 1 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.05)',
+                            color: pts === 5 * multiplier ? 'var(--accent)' : pts === 3 * multiplier ? 'var(--secondary)' : pts === 1 * multiplier ? 'var(--primary)' : 'var(--text-muted)',
+                            background: pts === 5 * multiplier ? 'rgba(16, 185, 129, 0.15)' : pts === 3 * multiplier ? 'rgba(245, 158, 11, 0.15)' : pts === 1 * multiplier ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.05)',
                             padding: '2px 8px',
                             borderRadius: '20px',
                           }}>
-                            {pts === 3 ? '¡Exacto! +3 pts' : pts === 1 ? 'Ganador +1 pt' : '0 pts'}
+                            {getPointsLabel()}
                           </span>
                         ) : (
                           <span style={{ color: 'var(--gold)', fontWeight: 600 }}>Pendiente</span>
