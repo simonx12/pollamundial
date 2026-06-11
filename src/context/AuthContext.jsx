@@ -43,6 +43,7 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!active) return;
+        if (event === 'INITIAL_SESSION') return;
 
         const currentUser = session?.user ?? null;
         const isDifferentUser = currentUser?.id !== lastFetchedUserId.current;
