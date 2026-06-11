@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Trophy, Medal, Target, TrendingUp, X, Eye, ClipboardList, Search, RefreshCw } from 'lucide-react';
-import { getLeaderboard, getUserPredictions, getAllMatchResults } from '../lib/supabase';
-import { generateGroupMatches, generateKnockoutMatches, calculateMatchPoints, getMatchMultiplier } from '../lib/worldcupData';
+import { Trophy, Medal, Target, TrendingUp, X, ClipboardList, Search, RefreshCw } from 'lucide-react';
+import { getLeaderboard, getAllMatchResults } from '../lib/supabase';
+import { generateGroupMatches, generateKnockoutMatches } from '../lib/worldcupData';
 import { useAuth } from '../context/AuthContext';
 import './Pages.css';
 
@@ -15,11 +15,8 @@ const Leaderboard = () => {
   const [lastRefresh, setLastRefresh] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(null);
 
-  // Estados para ver predicciones de otros jugadores
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [selectedPredictions, setSelectedPredictions] = useState([]);
+  // Resultados reales
   const [realResults, setRealResults] = useState([]);
-  const [loadingPreds, setLoadingPreds] = useState(false);
 
   const intervalRef = useRef(null);
   const tickRef = useRef(null);
@@ -87,19 +84,6 @@ const Leaderboard = () => {
     realResults.forEach((r) => (map[r.match_id] = r));
     return map;
   }, [realResults]);
-
-  const handleViewUserPredictions = async (player) => {
-    setSelectedPlayer(player);
-    setLoadingPreds(true);
-    try {
-      const preds = await getUserPredictions(player.id).catch(() => []);
-      setSelectedPredictions(preds || []);
-    } catch (err) {
-      console.error('Error loading user predictions:', err);
-    } finally {
-      setLoadingPreds(false);
-    }
-  };
 
   const filteredPlayers = useMemo(() => {
     if (!searchQuery.trim()) return players;
@@ -191,7 +175,7 @@ const Leaderboard = () => {
         <div className="glass-panel animate-in stagger-2">
           <div className="podium">
             {/* 2nd place */}
-            <div className="podium-item second" style={{ cursor: 'pointer' }} onClick={() => handleViewUserPredictions(top3[1])}>
+            <div className="podium-item second">
               <span className="podium-medal">🥈</span>
               <div className="podium-avatar">
                 {top3[1].username?.charAt(0).toUpperCase()}
@@ -201,7 +185,7 @@ const Leaderboard = () => {
             </div>
 
             {/* 1st place */}
-            <div className="podium-item first" style={{ cursor: 'pointer' }} onClick={() => handleViewUserPredictions(top3[0])}>
+            <div className="podium-item first">
               <span className="podium-medal">🥇</span>
               <div className="podium-avatar">
                 {top3[0].username?.charAt(0).toUpperCase()}
@@ -211,7 +195,7 @@ const Leaderboard = () => {
             </div>
 
             {/* 3rd place */}
-            <div className="podium-item third" style={{ cursor: 'pointer' }} onClick={() => handleViewUserPredictions(top3[2])}>
+            <div className="podium-item third">
               <span className="podium-medal">🥉</span>
               <div className="podium-avatar">
                 {top3[2].username?.charAt(0).toUpperCase()}
@@ -231,9 +215,6 @@ const Leaderboard = () => {
               <Medal size={20} style={{ verticalAlign: '-3px', marginRight: '6px' }} />
               Tabla Completa
             </h2>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              💡 Haz clic en cualquier jugador para ver sus pronósticos
-            </span>
           </div>
           
           {/* Search bar inside Leaderboard */}
@@ -274,7 +255,6 @@ const Leaderboard = () => {
                 <th style={{ textAlign: 'center' }}>
                   <TrendingUp size={12} style={{ verticalAlign: '-1px' }} /> Ganador
                 </th>
-                <th style={{ textAlign: 'center' }}>Detalle</th>
                 <th style={{ textAlign: 'right' }}>Puntos</th>
               </tr>
             </thead>
@@ -328,11 +308,6 @@ const Leaderboard = () => {
                     <td style={{ textAlign: 'center' }}>
                       <span className="detail-cell">{player.winner_hits}</span>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className="btn btn-sm btn-secondary" style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Eye size={12} /> Ver
-                      </button>
-                    </td>
                     <td style={{ textAlign: 'right' }}>
                       <span className="points-cell" style={{
                         color: isCurrentUser ? 'var(--primary)' : ''
@@ -353,172 +328,6 @@ const Leaderboard = () => {
           </div>
         )}
       </div>
-
-      {/* MODAL PARA MOSTRAR DETALLE DE PRONÓSTICOS */}
-      {selectedPlayer && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-          padding: '1.5rem',
-        }} onClick={() => setSelectedPlayer(null)}>
-          <div className="glass-panel animate-in" style={{
-            width: '100%',
-            maxWidth: '650px',
-            maxHeight: '85vh',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 0,
-            overflow: 'hidden',
-          }} onClick={(e) => e.stopPropagation()}>
-            {/* Header del Modal */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '1.25rem 1.5rem',
-              borderBottom: '1px solid var(--panel-hover)',
-              background: 'var(--panel-hover)',
-            }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  ⚽ Pronósticos de {selectedPlayer.username}
-                </h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-                  Total: {selectedPlayer.total_points} pts · Exactos: {selectedPlayer.exact_hits} · Aciertos: {selectedPlayer.winner_hits}
-                </p>
-              </div>
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '6px', borderRadius: '50%' }}
-                onClick={() => setSelectedPlayer(null)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Lista de Pronósticos */}
-            <div style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '1.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-            }}>
-              {loadingPreds ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
-                  <div className="spinner" />
-                  <span>Cargando pronósticos...</span>
-                </div>
-              ) : selectedPredictions.length === 0 ? (
-                <div className="empty-state" style={{ minHeight: '200px' }}>
-                  <span style={{ fontSize: '2.5rem' }}>📄</span>
-                  <p>Este usuario aún no ha guardado ningún pronóstico.</p>
-                </div>
-              ) : (
-                selectedPredictions.map((pred) => {
-                  const match = matchMap[pred.match_id];
-                  if (!match) return null;
-
-                  const result = resultMap[pred.match_id];
-                  const hasResult = !!result;
-
-                  // Calcular puntos locales
-                  const multiplier = getMatchMultiplier(pred.match_id);
-                  let pts = 0;
-                  if (hasResult) {
-                    pts = calculateMatchPoints(
-                      pred.match_id,
-                      pred.home_score,
-                      pred.away_score,
-                      result.home_score,
-                      result.away_score
-                    );
-                  }
-
-                  const getPointsLabel = () => {
-                    if (pts === 5 * multiplier) return `¡Exacto! +${5 * multiplier} pts`;
-                    if (pts === 3 * multiplier) return `Diferencia +${3 * multiplier} pts`;
-                    if (pts === 1 * multiplier) return `Ganador +${1 * multiplier} pt${multiplier > 1 ? 's' : ''}`;
-                    return '0 pts';
-                  };
-
-                  return (
-                    <div
-                      key={pred.id}
-                      style={{
-                        padding: '1rem',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid var(--panel-hover)',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                      }}
-                    >
-                      {/* Cabecera del partido */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        <span>{match.group}</span>
-                        {hasResult ? (
-                          <span style={{
-                            fontWeight: 700,
-                            color: pts === 5 * multiplier ? 'var(--accent)' : pts === 3 * multiplier ? 'var(--secondary)' : pts === 1 * multiplier ? 'var(--primary)' : 'var(--text-muted)',
-                            background: pts === 5 * multiplier ? 'rgba(16, 185, 129, 0.15)' : pts === 3 * multiplier ? 'rgba(245, 158, 11, 0.15)' : pts === 1 * multiplier ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.05)',
-                            padding: '2px 8px',
-                            borderRadius: '20px',
-                          }}>
-                            {getPointsLabel()}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--gold)', fontWeight: 600 }}>Pendiente</span>
-                        )}
-                      </div>
-
-                      {/* Marcadores */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        {/* Equipo local */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                          <span>{match.homeFlag}</span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{match.homeTeam}</span>
-                        </div>
-
-                        {/* Comparación de marcadores */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '0 1rem' }}>
-                          {/* Predicción */}
-                          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                            Pronóstico: {pred.home_score} - {pred.away_score}
-                          </div>
-                          {/* Real */}
-                          {hasResult && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}>
-                              Real: {result.home_score} - {result.away_score}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Equipo visitante */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'flex-end' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{match.awayTeam}</span>
-                          <span>{match.awayFlag}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
