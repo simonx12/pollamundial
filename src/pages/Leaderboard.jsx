@@ -265,11 +265,9 @@ const Leaderboard = () => {
                   <tr
                     key={player.id}
                     style={{
-                      cursor: 'pointer',
                       borderLeft: isCurrentUser ? '4px solid var(--primary)' : 'none',
                       background: isCurrentUser ? 'rgba(0, 240, 255, 0.06)' : ''
                     }}
-                    onClick={() => handleViewUserPredictions(player)}
                   >
                     <td>
                       <span className={`rank-cell ${index < 3 ? `rank-${index + 1}` : ''}`}>
