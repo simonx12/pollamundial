@@ -46,10 +46,6 @@ const Bracket = () => {
   }, [results]);
 
   const handleSavePrediction = async (matchId, homeScore, awayScore) => {
-    if (new Date() > POLLA_CLOSE_DEADLINE) {
-      addToast('La polla ya está cerrada.', 'error');
-      return;
-    }
     await savePrediction(user.id, matchId, homeScore, awayScore);
     addToast('Pronóstico guardado ✓', 'success');
     loadData();
@@ -99,8 +95,6 @@ const Bracket = () => {
     return { total, predicted, percentage: total > 0 ? Math.round((predicted / total) * 100) : 0 };
   }, [knockoutMatches, predictionMap]);
 
-  const isClosed = new Date() > POLLA_CLOSE_DEADLINE;
-
   return (
     <div className="page-container bracket-page">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -132,7 +126,6 @@ const Bracket = () => {
                       prediction={predictionMap[match.id]}
                       result={resultMap[match.id]}
                       onSavePrediction={handleSavePrediction}
-                      disabled={isClosed}
                     />
                   </div>
                 ))}
