@@ -5,7 +5,6 @@ import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/s
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
 import { Printer } from 'lucide-react';
-import CountdownBanner, { POLLA_CLOSE_DEADLINE } from '../components/ui/CountdownBanner';
 import './Bracket.css';
 import './Pages.css';
 
@@ -118,8 +117,6 @@ const Bracket = () => {
           <span>Exportar PDF</span>
         </button>
       </header>
-
-      <CountdownBanner />
 
       <div className="bracket-wrapper">
         <div className="bracket-container">
