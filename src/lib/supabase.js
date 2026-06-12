@@ -16,12 +16,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      storageKey: 'pollamundial-auth-token-v2', // Fuerza una nueva sesión para evitar bloqueos por caché corrupta
-    }
-  }
+  supabaseAnonKey || 'placeholder-key'
 );
 
 /* ─── Profiles ─── */

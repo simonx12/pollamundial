@@ -13,57 +13,27 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
 
-    async function initializeAuth() {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[DEBUG] initializeAuth: getSession returned', { hasSession: !!session, error });
-        
-        if (!active) return;
-        
-        if (error || !session) {
-           setUser(null);
-           setProfile(null);
-           setLoading(false);
-           return;
-        }
-
-        const currentUser = session.user;
-        setUser(currentUser);
-        console.log('[DEBUG] initializeAuth: user set', currentUser?.id);
-
-        if (currentUser) {
-          console.log('[DEBUG] initializeAuth: calling fetchProfile');
-          await fetchProfile(currentUser.id, currentUser.email);
-          console.log('[DEBUG] initializeAuth: fetchProfile finished');
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      } catch {
-        if (active) setLoading(false);
-      }
-    }
-
-    initializeAuth();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!active) return;
-        
-        if (event === 'INITIAL_SESSION') return;
 
         const currentUser = session?.user ?? null;
-        const isDifferentUser = currentUser?.id !== lastFetchedUserId.current;
 
-        if (isDifferentUser || event === 'SIGNED_OUT') {
+        if (event === 'SIGNED_OUT') {
+          lastFetchedUserId.current = null;
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        if (currentUser) {
           setUser(currentUser);
-          if (currentUser) {
-            await fetchProfile(currentUser.id, currentUser.email);
-          } else {
-            lastFetchedUserId.current = null;
-            setProfile(null);
-            setLoading(false);
-          }
+          await fetchProfile(currentUser.id, currentUser.email);
+        } else {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
         }
       }
     );
@@ -75,13 +45,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function fetchProfile(userId, userEmail, force = false) {
-    console.log('[DEBUG] fetchProfile: start for', userId);
-    if (fetchingUserId.current === userId) {
-      console.log('[DEBUG] fetchProfile: already fetching, returning');
-      return;
-    }
+    if (fetchingUserId.current === userId) return;
     if (!force && lastFetchedUserId.current === userId) {
-      console.log('[DEBUG] fetchProfile: already fetched, setting loading false');
       setLoading(false);
       return;
     }
@@ -90,39 +55,25 @@ export function AuthProvider({ children }) {
     lastFetchedUserId.current = userId;
 
     try {
-      console.log('[DEBUG] fetchProfile: requesting from supabase');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-      console.log('[DEBUG] fetchProfile: response received', { hasData: !!data, error });
 
       if (error && error.code === 'PGRST116') {
-        const fallbackUsername = userEmail
-          ? userEmail.split('@')[0]
-          : 'jugador';
-
+        const fallbackUsername = userEmail ? userEmail.split('@')[0] : 'jugador';
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
-          .insert({
-            id: userId,
-            username: fallbackUsername,
-            bet_amount: 20000,
-          })
+          .insert({ id: userId, username: fallbackUsername, bet_amount: 20000 })
           .select()
           .single();
-
-        if (!insertError) {
-          setProfile(newProfile);
-        }
+        if (!insertError) setProfile(newProfile);
       } else if (data) {
         setProfile(data);
       }
-    } catch (err) {
-      console.log('[DEBUG] fetchProfile: catch block error', err);
+    } catch {
     } finally {
-      console.log('[DEBUG] fetchProfile: finally block, setting loading false');
       fetchingUserId.current = null;
       setLoading(false);
     }
@@ -135,7 +86,6 @@ export function AuthProvider({ children }) {
       options: { data: { username } },
     });
     if (error) throw error;
-
     if (data.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
@@ -147,10 +97,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   }
