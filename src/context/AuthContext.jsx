@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { validateTokenClaims } from '../lib/jwt';
 
 const AuthContext = createContext();
 
@@ -7,7 +8,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Evitar doble llamada a fetchProfile en la inicialización
   const initialized = useRef(false);
   const lastFetchedUserId = useRef(null);
   const fetchingUserId = useRef(null);
@@ -20,24 +20,28 @@ export function AuthProvider({ children }) {
 
     const setupExpirationTimer = (session) => {
       if (expirationTimer.current) clearTimeout(expirationTimer.current);
-      if (!session?.expires_at) return;
+      if (!session?.access_token) return;
 
-      // expires_at is in seconds
+      // Usamos los claims decodificados en lugar del tiempo general
+      const isTokenValid = validateTokenClaims(session.access_token);
+      if (!isTokenValid) {
+        supabase.auth.signOut();
+        return;
+      }
+
       const expiresInMs = (session.expires_at * 1000) - Date.now();
       
       if (expiresInMs > 0) {
         expirationTimer.current = setTimeout(async () => {
-          console.warn('⏱️ Access Token expirado. Cerrando sesión.');
+          console.warn('⏱️ Access Token expirado según el timer. Cerrando sesión.');
           await supabase.auth.signOut();
         }, expiresInMs);
       } else {
-        // Ya expiró
         supabase.auth.signOut();
       }
     };
 
     async function initializeAuth() {
-      // Safety timeout: nunca quedar atrapado cargando por más de 5 segundos
       const timeoutId = setTimeout(() => {
         if (active) {
           console.warn('⚠️ initializeAuth timeout: Forzando fin de carga');
@@ -46,13 +50,28 @@ export function AuthProvider({ children }) {
       }, 5000);
 
       try {
-        // Obtener la sesión persistida en caché de Supabase al iniciar la app
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         if (!active) return;
+        
+        if (error || !session) {
+           setUser(null);
+           setProfile(null);
+           setLoading(false);
+           return;
+        }
+
+        // Validación estricta de claims
+        if (!validateTokenClaims(session.access_token)) {
+          console.warn('⚠️ Invalid token claims at initialization. Forcing logout.');
+          await supabase.auth.signOut();
+          setUser(null);
+          setLoading(false);
+          return;
+        }
 
         setupExpirationTimer(session);
 
-        const currentUser = session?.user ?? null;
+        const currentUser = session.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
@@ -71,11 +90,17 @@ export function AuthProvider({ children }) {
 
     initializeAuth();
 
-    // Escuchar eventos futuros de inicio/cierre de sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!active) return;
         
+        // Si hay una sesión, validamos los claims antes de procesarla
+        if (session && !validateTokenClaims(session.access_token)) {
+          console.warn('⚠️ Invalid token claims on Auth change. Forcing logout.');
+          await supabase.auth.signOut();
+          return;
+        }
+
         setupExpirationTimer(session);
         
         if (event === 'INITIAL_SESSION') return;
@@ -83,8 +108,6 @@ export function AuthProvider({ children }) {
         const currentUser = session?.user ?? null;
         const isDifferentUser = currentUser?.id !== lastFetchedUserId.current;
 
-        // Solo reaccionamos si de verdad cambió de usuario (login, logout, cambio de cuenta)
-        // o si se disparó explícitamente un cierre de sesión.
         if (isDifferentUser || event === 'SIGNED_OUT') {
           setUser(currentUser);
           if (currentUser) {
@@ -98,20 +121,20 @@ export function AuthProvider({ children }) {
       }
     );
 
-    // Verificación activa (heartbeat) para detectar si el token fue borrado manualmente
     const heartbeatTimer = setInterval(async () => {
       if (!active) return;
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Si teníamos usuario en el estado pero ya no hay sesión en Supabase (ej. se borró el token de LocalStorage)
-      if (!session && lastFetchedUserId.current) {
-        console.warn('⚠️ Sesión no encontrada en verificación periódica. Forzando salida.');
+      const claimsAreValid = session ? validateTokenClaims(session.access_token) : false;
+
+      if ((!session || !claimsAreValid) && lastFetchedUserId.current) {
+        console.warn('⚠️ Sesión o claims no válidos en heartbeat. Forzando salida.');
         setUser(null);
         setProfile(null);
         lastFetchedUserId.current = null;
         supabase.auth.signOut();
       }
-    }, 3000); // Verificar cada 3 segundos
+    }, 3000);
 
     return () => {
       active = false;

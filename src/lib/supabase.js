@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getMatchMultiplier } from './worldcupData';
+import { getCache, setCache, invalidateCache } from './cache';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -65,15 +66,24 @@ export async function savePrediction(userId, matchId, homeScore, awayScore) {
     .select()
     .single();
   if (error) throw error;
+  
+  // Invalidate cache
+  invalidateCache(`predictions_${userId}`);
   return data;
 }
 
 export async function getUserPredictions(userId) {
+  const cacheKey = `predictions_${userId}`;
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('predictions')
     .select('*')
     .eq('user_id', userId);
   if (error) throw error;
+  
+  setCache(cacheKey, data, 2 * 60 * 1000); // 2 minutes TTL
   return data;
 }
 
@@ -103,19 +113,33 @@ export async function saveMatchResult(matchId, homeScore, awayScore, status) {
     .select()
     .single();
   if (error) throw error;
+  
+  // Invalidate caches
+  invalidateCache('match_results_all');
+  invalidateCache('leaderboard');
   return data;
 }
 
 export async function getAllMatchResults() {
+  const cacheKey = 'match_results_all';
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('match_results')
     .select('*');
   if (error) throw error;
+  
+  setCache(cacheKey, data, 1 * 60 * 1000); // 1 minute TTL
   return data;
 }
 
 /* ─── Leaderboard (puntos) ─── */
 export async function getLeaderboard() {
+  const cacheKey = 'leaderboard';
+  const cached = getCache(cacheKey);
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('profiles')
     .select('id, username, avatar_url, bet_amount')
@@ -146,7 +170,7 @@ export async function getLeaderboard() {
     }
   });
 
-  return data
+  const finalData = data
     .map((profile) => ({
       ...profile,
       total_points: pointsMap[profile.id] || 0,
@@ -154,6 +178,9 @@ export async function getLeaderboard() {
       winner_hits: winnerMap[profile.id] || 0,
     }))
     .sort((a, b) => b.total_points - a.total_points);
+
+  setCache(cacheKey, finalData, 3 * 60 * 1000); // 3 minutes TTL
+  return finalData;
 }
 
 /* ─── Calcular puntos después de un resultado ─── */
