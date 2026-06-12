@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { validateTokenClaims } from '../lib/jwt';
 
 const AuthContext = createContext();
 
@@ -8,70 +7,26 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const initialized = useRef(false);
   const lastFetchedUserId = useRef(null);
   const fetchingUserId = useRef(null);
-  const lastProcessedUserId = useRef(null);
-
-  const expirationTimer = useRef(null);
 
   useEffect(() => {
     let active = true;
 
-    const setupExpirationTimer = (session) => {
-      if (expirationTimer.current) clearTimeout(expirationTimer.current);
-      if (!session?.access_token) return;
-
-      // Usamos los claims decodificados en lugar del tiempo general
-      const isTokenValid = validateTokenClaims(session.access_token);
-      if (!isTokenValid) {
-        supabase.auth.signOut();
-        return;
-      }
-
-      const expiresInMs = (session.expires_at * 1000) - Date.now();
-      
-      if (expiresInMs > 0) {
-        expirationTimer.current = setTimeout(async () => {
-          console.warn('⏱️ Access Token expirado según el timer. Cerrando sesión.');
-          await supabase.auth.signOut();
-        }, expiresInMs);
-      } else {
-        supabase.auth.signOut();
-      }
-    };
-
     async function initializeAuth() {
-      const timeoutId = setTimeout(() => {
-        if (active) {
-          console.warn('⚠️ initializeAuth timeout: Forzando fin de carga');
-          setLoading(false);
-        }
-      }, 5000);
-
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (!active) return;
         
-        if (sessionError || !session) {
+        if (error || !session) {
            setUser(null);
            setProfile(null);
            setLoading(false);
            return;
         }
 
-        // Validación estricta de claims
-        if (!validateTokenClaims(session.access_token)) {
-          console.warn('⚠️ Invalid token claims at initialization. Forcing logout.');
-          await supabase.auth.signOut();
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-
-        setupExpirationTimer(session);
-
-        const currentUser = session.user ?? null;
+        const currentUser = session.user;
         setUser(currentUser);
 
         if (currentUser) {
@@ -80,11 +35,8 @@ export function AuthProvider({ children }) {
           setProfile(null);
           setLoading(false);
         }
-      } catch (err) {
-        console.error('❌ Error al inicializar sesión:', err);
+      } catch {
         if (active) setLoading(false);
-      } finally {
-        clearTimeout(timeoutId);
       }
     }
 
@@ -93,15 +45,6 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!active) return;
-        
-        // Si hay una sesión, validamos los claims antes de procesarla
-        if (session && !validateTokenClaims(session.access_token)) {
-          console.warn('⚠️ Invalid token claims on Auth change. Forcing logout.');
-          await supabase.auth.signOut();
-          return;
-        }
-
-        setupExpirationTimer(session);
         
         if (event === 'INITIAL_SESSION') return;
 
@@ -121,33 +64,13 @@ export function AuthProvider({ children }) {
       }
     );
 
-    const heartbeatTimer = setInterval(async () => {
-      if (!active) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const claimsAreValid = session ? validateTokenClaims(session.access_token) : false;
-
-      if ((!session || !claimsAreValid) && lastFetchedUserId.current) {
-        console.warn('⚠️ Sesión o claims no válidos en heartbeat. Forzando salida.');
-        setUser(null);
-        setProfile(null);
-        lastFetchedUserId.current = null;
-        supabase.auth.signOut();
-      }
-    }, 3000);
-
     return () => {
       active = false;
       subscription.unsubscribe();
-      if (expirationTimer.current) clearTimeout(expirationTimer.current);
-      clearInterval(heartbeatTimer);
     };
   }, []);
 
-
-  // fetchProfile recibe userId Y email para no depender del estado async `user`
   async function fetchProfile(userId, userEmail, force = false) {
-    // Si ya estamos buscando el perfil de este usuario o ya lo leímos, no hacer nada
     if (fetchingUserId.current === userId) return;
     if (!force && lastFetchedUserId.current === userId) {
       setLoading(false);
@@ -155,7 +78,6 @@ export function AuthProvider({ children }) {
     }
 
     fetchingUserId.current = userId;
-    // Guardar el id consultado inmediatamente para evitar re-intentos infinitos si falla la red o escritura
     lastFetchedUserId.current = userId;
 
     try {
@@ -166,8 +88,6 @@ export function AuthProvider({ children }) {
         .single();
 
       if (error && error.code === 'PGRST116') {
-        // Perfil no existe → crearlo
-        console.log('📝 Creando perfil para:', userId);
         const fallbackUsername = userEmail
           ? userEmail.split('@')[0]
           : 'jugador';
@@ -182,18 +102,13 @@ export function AuthProvider({ children }) {
           .select()
           .single();
 
-        if (insertError) {
-          console.error('❌ Error creando perfil:', insertError);
-        } else {
+        if (!insertError) {
           setProfile(newProfile);
         }
-      } else if (error) {
-        console.error('❌ Error leyendo perfil:', error);
       } else if (data) {
         setProfile(data);
       }
-    } catch (err) {
-      console.error('❌ Error fetchProfile:', err);
+    } catch {
     } finally {
       fetchingUserId.current = null;
       setLoading(false);
@@ -208,8 +123,6 @@ export function AuthProvider({ children }) {
     });
     if (error) throw error;
 
-    // Crear perfil inmediatamente (el trigger de onAuthStateChange también lo intentará,
-    // pero con upsert evitamos duplicados)
     if (data.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
