@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
     async function initializeAuth() {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[DEBUG] initializeAuth: getSession returned', { hasSession: !!session, error });
         
         if (!active) return;
         
@@ -28,9 +29,12 @@ export function AuthProvider({ children }) {
 
         const currentUser = session.user;
         setUser(currentUser);
+        console.log('[DEBUG] initializeAuth: user set', currentUser?.id);
 
         if (currentUser) {
+          console.log('[DEBUG] initializeAuth: calling fetchProfile');
           await fetchProfile(currentUser.id, currentUser.email);
+          console.log('[DEBUG] initializeAuth: fetchProfile finished');
         } else {
           setProfile(null);
           setLoading(false);
@@ -71,8 +75,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function fetchProfile(userId, userEmail, force = false) {
-    if (fetchingUserId.current === userId) return;
+    console.log('[DEBUG] fetchProfile: start for', userId);
+    if (fetchingUserId.current === userId) {
+      console.log('[DEBUG] fetchProfile: already fetching, returning');
+      return;
+    }
     if (!force && lastFetchedUserId.current === userId) {
+      console.log('[DEBUG] fetchProfile: already fetched, setting loading false');
       setLoading(false);
       return;
     }
@@ -81,11 +90,13 @@ export function AuthProvider({ children }) {
     lastFetchedUserId.current = userId;
 
     try {
+      console.log('[DEBUG] fetchProfile: requesting from supabase');
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+      console.log('[DEBUG] fetchProfile: response received', { hasData: !!data, error });
 
       if (error && error.code === 'PGRST116') {
         const fallbackUsername = userEmail
@@ -108,8 +119,10 @@ export function AuthProvider({ children }) {
       } else if (data) {
         setProfile(data);
       }
-    } catch {
+    } catch (err) {
+      console.log('[DEBUG] fetchProfile: catch block error', err);
     } finally {
+      console.log('[DEBUG] fetchProfile: finally block, setting loading false');
       fetchingUserId.current = null;
       setLoading(false);
     }
