@@ -83,8 +83,11 @@ export async function getUserPredictions(userId) {
     .eq('user_id', userId);
   if (error) throw error;
   
-  setCache(cacheKey, data, 2 * 60 * 1000); // 2 minutes TTL
-  return data;
+  // Only cache if there's actually data, to prevent caching a silent RLS failure
+  if (data && data.length > 0) {
+    setCache(cacheKey, data, 2 * 60 * 1000); // 2 minutes TTL
+  }
+  return data || [];
 }
 
 export async function getAllPredictionsForMatch(matchId) {

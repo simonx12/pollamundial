@@ -50,14 +50,26 @@ export function AuthProvider({ children }) {
       }, 5000);
 
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (!active) return;
         
-        if (error || !session) {
+        if (sessionError || !session) {
            setUser(null);
            setProfile(null);
            setLoading(false);
            return;
+        }
+
+        // Validación estricta con el backend para evitar sesiones "fantasmas"
+        const { data: { user: verifiedUser }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !verifiedUser) {
+          console.warn('⚠️ Server rejected token. Forcing logout.');
+          await supabase.auth.signOut();
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
         }
 
         // Validación estricta de claims
@@ -71,7 +83,7 @@ export function AuthProvider({ children }) {
 
         setupExpirationTimer(session);
 
-        const currentUser = session.user ?? null;
+        const currentUser = verifiedUser ?? null;
         setUser(currentUser);
 
         if (currentUser) {
