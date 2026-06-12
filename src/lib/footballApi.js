@@ -215,6 +215,13 @@ export async function syncLiveResultsToSupabase(force = false) {
         continue;
       }
 
+      // Evitar guardar resultados de partidos futuros (permitimos 2 horas de margen)
+      const matchTime = new Date(localMatch.date).getTime();
+      if (matchTime > Date.now() + 2 * 60 * 60 * 1000) {
+        console.log(`  ⏳ Omitiendo partido futuro ${localMatch.id}`);
+        continue;
+      }
+
       try {
         const status = normalized.status === 'FINISHED' ? 'FINISHED' : 'LIVE';
         await saveMatchResult(localMatch.id, normalized.homeScore, normalized.awayScore, status);
@@ -251,6 +258,13 @@ export async function syncLiveResultsToSupabase(force = false) {
             m.homeCode === homeCode && m.awayCode === awayCode
           );
           if (!localMatch) continue;
+
+          // Evitar guardar resultados de partidos futuros (permitimos 2 horas de margen)
+          const matchTime = new Date(localMatch.date).getTime();
+          if (matchTime > Date.now() + 2 * 60 * 60 * 1000) {
+            console.log(`  ⏳ Omitiendo partido futuro ${localMatch.id}`);
+            continue;
+          }
 
           // Try fullTime, then halfTime as fallback
           let homeScore = apiMatch.score?.fullTime?.home;

@@ -33,7 +33,8 @@ const MatchResultCard = ({ match, result, onSaveResult, disabled }) => {
   };
 
   const matchDate = new Date(match.date);
-  const hasResult = result !== undefined && result !== null;
+  // Un resultado oficial no puede existir para un partido que aún no ocurre
+  const hasResult = result !== undefined && result !== null && new Date() >= matchDate;
 
   const formatDate = (date) => {
     const now = new Date();

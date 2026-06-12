@@ -32,7 +32,8 @@ const MatchCard = ({ match, prediction, onSavePrediction, disabled, result }) =>
 
   const matchDate = new Date(match.date);
   const deadline = new Date(matchDate.getTime() - 30 * 60000); // 30 minutes before match
-  const isFinished = match.status === 'FINISHED' || result;
+  // A match cannot be finished if the match date is in the future
+  const isFinished = (match.status === 'FINISHED' || result) && new Date() >= matchDate;
   const isLive = ['LIVE', 'IN_PLAY', 'PAUSED'].includes(match.status);
   const isLocked = new Date() > deadline;
 

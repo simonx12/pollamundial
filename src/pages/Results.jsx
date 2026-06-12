@@ -18,6 +18,7 @@ const Results = () => {
   const [activeStage, setActiveStage] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [activeDate, setActiveDate] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(null);
@@ -99,6 +100,14 @@ const Results = () => {
   const filteredMatches = useMemo(() => {
     let matches = allMatches;
 
+    if (activeDate) {
+      matches = matches.filter((m) => {
+        const matchLocal = new Date(m.date);
+        const matchDateStr = `${matchLocal.getFullYear()}-${String(matchLocal.getMonth() + 1).padStart(2, '0')}-${String(matchLocal.getDate()).padStart(2, '0')}`;
+        return matchDateStr === activeDate;
+      });
+    }
+
     if (activeStage !== 'ALL') {
       if (activeStage === 'GROUP_STAGE') {
         matches = matches.filter((m) => m.stage === 'GROUP_STAGE');
@@ -124,7 +133,7 @@ const Results = () => {
     }
 
     return matches;
-  }, [allMatches, activeStage, statusFilter, searchQuery, resultMap]);
+  }, [allMatches, activeStage, statusFilter, searchQuery, resultMap, activeDate]);
 
   const handleSaveResult = async (matchId, homeScore, awayScore) => {
     try {
@@ -267,22 +276,59 @@ const Results = () => {
 
       {/* Filters */}
       <div className="glass-panel animate-in stagger-3" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ position: 'relative' }}>
-          <Search size={16} style={{
-            position: 'absolute',
-            left: '14px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-muted)',
-          }} />
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Buscar por equipo o fase..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: '40px' }}
-          />
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+            <Search size={16} style={{
+              position: 'absolute',
+              left: '14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+            }} />
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Buscar por equipo o fase..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '40px' }}
+            />
+          </div>
+
+          <div style={{ position: 'relative', minWidth: '150px' }}>
+            <input
+              type="date"
+              className="input-field"
+              value={activeDate}
+              onChange={(e) => setActiveDate(e.target.value)}
+              style={{ 
+                color: activeDate ? 'inherit' : 'var(--text-muted)',
+                paddingRight: '30px'
+              }}
+            />
+            {activeDate && (
+              <button 
+                onClick={() => setActiveDate('')}
+                style={{
+                  position: 'absolute', 
+                  right: '10px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  background: 'none', 
+                  border: 'none', 
+                  color: 'var(--text-muted)', 
+                  cursor: 'pointer', 
+                  fontSize: '1.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Limpiar fecha"
+              >
+                &times;
+              </button>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>

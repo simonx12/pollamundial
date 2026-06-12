@@ -16,6 +16,7 @@ const Predictions = () => {
   const [activeGroup, setActiveGroup] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, PENDING, FINISHED
+  const [activeDate, setActiveDate] = useState('');
 
   const allMatches = useMemo(() => generateGroupMatches(), []);
 
@@ -51,6 +52,15 @@ const Predictions = () => {
   const filteredMatches = useMemo(() => {
     let matches = allMatches;
 
+    // Date filter
+    if (activeDate) {
+      matches = matches.filter((m) => {
+        const matchLocal = new Date(m.date);
+        const matchDateStr = `${matchLocal.getFullYear()}-${String(matchLocal.getMonth() + 1).padStart(2, '0')}-${String(matchLocal.getDate()).padStart(2, '0')}`;
+        return matchDateStr === activeDate;
+      });
+    }
+
     // Group filter
     if (activeGroup !== 'ALL') {
       matches = matches.filter((m) => m.group === `Grupo ${activeGroup}`);
@@ -75,7 +85,7 @@ const Predictions = () => {
     }
 
     return matches;
-  }, [allMatches, activeGroup, statusFilter, searchQuery, resultMap]);
+  }, [allMatches, activeGroup, statusFilter, searchQuery, resultMap, activeDate]);
 
   const handleSavePrediction = async (matchId, homeScore, awayScore) => {
     await savePrediction(user.id, matchId, homeScore, awayScore);
@@ -168,23 +178,61 @@ const Predictions = () => {
 
       {/* Filters */}
       <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {/* Search */}
-        <div style={{ position: 'relative' }}>
-          <Search size={16} style={{
-            position: 'absolute',
-            left: '14px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-muted)',
-          }} />
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Buscar equipo..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: '40px' }}
-          />
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+            <Search size={16} style={{
+              position: 'absolute',
+              left: '14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+            }} />
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Buscar equipo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ paddingLeft: '40px' }}
+            />
+          </div>
+
+          {/* Date Filter */}
+          <div style={{ position: 'relative', minWidth: '150px' }}>
+            <input
+              type="date"
+              className="input-field"
+              value={activeDate}
+              onChange={(e) => setActiveDate(e.target.value)}
+              style={{ 
+                color: activeDate ? 'inherit' : 'var(--text-muted)',
+                paddingRight: '30px'
+              }}
+            />
+            {activeDate && (
+              <button 
+                onClick={() => setActiveDate('')}
+                style={{
+                  position: 'absolute', 
+                  right: '10px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  background: 'none', 
+                  border: 'none', 
+                  color: 'var(--text-muted)', 
+                  cursor: 'pointer', 
+                  fontSize: '1.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Limpiar fecha"
+              >
+                &times;
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Status filter */}
