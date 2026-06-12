@@ -13,6 +13,10 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
 
+    const safetyTimeout = setTimeout(() => {
+      if (active) setLoading(false);
+    }, 6000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!active) return;
@@ -21,6 +25,7 @@ export function AuthProvider({ children }) {
 
         if (event === 'SIGNED_OUT') {
           lastFetchedUserId.current = null;
+          fetchingUserId.current = null;
           setUser(null);
           setProfile(null);
           setLoading(false);
@@ -40,6 +45,8 @@ export function AuthProvider({ children }) {
 
     return () => {
       active = false;
+      clearTimeout(safetyTimeout);
+      fetchingUserId.current = null;
       subscription.unsubscribe();
     };
   }, []);
