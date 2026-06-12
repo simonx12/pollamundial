@@ -98,10 +98,26 @@ export function AuthProvider({ children }) {
       }
     );
 
+    // Verificación activa (heartbeat) para detectar si el token fue borrado manualmente
+    const heartbeatTimer = setInterval(async () => {
+      if (!active) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Si teníamos usuario en el estado pero ya no hay sesión en Supabase (ej. se borró el token de LocalStorage)
+      if (!session && lastFetchedUserId.current) {
+        console.warn('⚠️ Sesión no encontrada en verificación periódica. Forzando salida.');
+        setUser(null);
+        setProfile(null);
+        lastFetchedUserId.current = null;
+        supabase.auth.signOut();
+      }
+    }, 3000); // Verificar cada 3 segundos
+
     return () => {
       active = false;
       subscription.unsubscribe();
       if (expirationTimer.current) clearTimeout(expirationTimer.current);
+      clearInterval(heartbeatTimer);
     };
   }, []);
 
