@@ -13,8 +13,28 @@ export function AuthProvider({ children }) {
   const fetchingUserId = useRef(null);
   const lastProcessedUserId = useRef(null);
 
+  const expirationTimer = useRef(null);
+
   useEffect(() => {
     let active = true;
+
+    const setupExpirationTimer = (session) => {
+      if (expirationTimer.current) clearTimeout(expirationTimer.current);
+      if (!session?.expires_at) return;
+
+      // expires_at is in seconds
+      const expiresInMs = (session.expires_at * 1000) - Date.now();
+      
+      if (expiresInMs > 0) {
+        expirationTimer.current = setTimeout(async () => {
+          console.warn('⏱️ Access Token expirado. Cerrando sesión.');
+          await supabase.auth.signOut();
+        }, expiresInMs);
+      } else {
+        // Ya expiró
+        supabase.auth.signOut();
+      }
+    };
 
     async function initializeAuth() {
       // Safety timeout: nunca quedar atrapado cargando por más de 5 segundos
@@ -29,6 +49,8 @@ export function AuthProvider({ children }) {
         // Obtener la sesión persistida en caché de Supabase al iniciar la app
         const { data: { session } } = await supabase.auth.getSession();
         if (!active) return;
+
+        setupExpirationTimer(session);
 
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -53,6 +75,9 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!active) return;
+        
+        setupExpirationTimer(session);
+        
         if (event === 'INITIAL_SESSION') return;
 
         const currentUser = session?.user ?? null;
@@ -76,6 +101,7 @@ export function AuthProvider({ children }) {
     return () => {
       active = false;
       subscription.unsubscribe();
+      if (expirationTimer.current) clearTimeout(expirationTimer.current);
     };
   }, []);
 

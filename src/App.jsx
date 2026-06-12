@@ -14,6 +14,8 @@ import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
 import ThemeToggle from './components/ui/ThemeToggle';
 
+import ProtectedRoute from './components/layout/ProtectedRoute';
+
 function App() {
   const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,23 +29,9 @@ function App() {
     }
   }, [user]);
 
-  // Loading screen
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="spinner spinner-lg" />
-        <h2>Cargando PollaMundial...</h2>
-      </div>
-    );
-  }
-
-  // Not authenticated — show login
-  if (!user) {
-    return <Login />;
-  }
-
-  return (
-    <Router>
+  // Main layout wrapper for protected routes
+  const ProtectedLayout = ({ children }) => (
+    <ProtectedRoute>
       <div className="app-container">
         {/* Mobile header */}
         <div className="mobile-header">
@@ -59,19 +47,31 @@ function App() {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         
         <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/predictions" element={<Predictions />} />
-            <Route path="/bracket" element={<Bracket />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/analytics" element={<StandingsAnalysis />} />
-            <Route path="/audit" element={<AuditLogs />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+          {children}
         </main>
       </div>
+    </ProtectedRoute>
+  );
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={
+          user ? <Navigate to="/dashboard" replace /> : <Login />
+        } />
+        
+        {/* Protected Routes */}
+        <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+        <Route path="/predictions" element={<ProtectedLayout><Predictions /></ProtectedLayout>} />
+        <Route path="/bracket" element={<ProtectedLayout><Bracket /></ProtectedLayout>} />
+        <Route path="/results" element={<ProtectedLayout><Results /></ProtectedLayout>} />
+        <Route path="/leaderboard" element={<ProtectedLayout><Leaderboard /></ProtectedLayout>} />
+        <Route path="/analytics" element={<ProtectedLayout><StandingsAnalysis /></ProtectedLayout>} />
+        <Route path="/audit" element={<ProtectedLayout><AuditLogs /></ProtectedLayout>} />
+        
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </Router>
   );
 }
