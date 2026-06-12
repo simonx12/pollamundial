@@ -18,7 +18,7 @@ const Results = () => {
   const [activeStage, setActiveStage] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [activeDate, setActiveDate] = useState('');
+  const [dateOrder, setDateOrder] = useState('ASC');
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(null);
@@ -98,15 +98,7 @@ const Results = () => {
   }, [results]);
 
   const filteredMatches = useMemo(() => {
-    let matches = allMatches;
-
-    if (activeDate) {
-      matches = matches.filter((m) => {
-        const matchLocal = new Date(m.date);
-        const matchDateStr = `${matchLocal.getFullYear()}-${String(matchLocal.getMonth() + 1).padStart(2, '0')}-${String(matchLocal.getDate()).padStart(2, '0')}`;
-        return matchDateStr === activeDate;
-      });
-    }
+    let matches = [...allMatches];
 
     if (activeStage !== 'ALL') {
       if (activeStage === 'GROUP_STAGE') {
@@ -132,8 +124,15 @@ const Results = () => {
       );
     }
 
+    // Order by date
+    matches.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateOrder === 'ASC' ? dateA - dateB : dateB - dateA;
+    });
+
     return matches;
-  }, [allMatches, activeStage, statusFilter, searchQuery, resultMap, activeDate]);
+  }, [allMatches, activeStage, statusFilter, searchQuery, resultMap, dateOrder]);
 
   const handleSaveResult = async (matchId, homeScore, awayScore) => {
     try {
@@ -295,39 +294,17 @@ const Results = () => {
             />
           </div>
 
-          <div style={{ position: 'relative', minWidth: '150px' }}>
-            <input
-              type="date"
+          {/* Date Order */}
+          <div style={{ minWidth: '150px' }}>
+            <select
               className="input-field"
-              value={activeDate}
-              onChange={(e) => setActiveDate(e.target.value)}
-              style={{ 
-                color: activeDate ? 'inherit' : 'var(--text-muted)',
-                paddingRight: '30px'
-              }}
-            />
-            {activeDate && (
-              <button 
-                onClick={() => setActiveDate('')}
-                style={{
-                  position: 'absolute', 
-                  right: '10px', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)',
-                  background: 'none', 
-                  border: 'none', 
-                  color: 'var(--text-muted)', 
-                  cursor: 'pointer', 
-                  fontSize: '1.2rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                title="Limpiar fecha"
-              >
-                &times;
-              </button>
-            )}
+              value={dateOrder}
+              onChange={(e) => setDateOrder(e.target.value)}
+              style={{ cursor: 'pointer' }}
+            >
+              <option value="ASC">Más próximos primero</option>
+              <option value="DESC">Más lejanos primero</option>
+            </select>
           </div>
         </div>
 
