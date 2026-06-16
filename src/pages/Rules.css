@@ -33,7 +33,7 @@
   color: var(--text-primary, #1a1a1a);
 }
 
-html.dark .rule-card h4 {
+[data-theme='dark'] .rule-card h4 {
   color: #fff;
 }
 
@@ -44,7 +44,7 @@ html.dark .rule-card h4 {
   line-height: 1.4;
 }
 
-html.dark .rule-card p {
+[data-theme='dark'] .rule-card p {
   color: #aaa;
 }
 
@@ -66,7 +66,7 @@ html.dark .rule-card p {
   background: linear-gradient(to bottom, rgba(37, 99, 235, 0.05), transparent);
 }
 .winner h3 { color: #1e40af; }
-html.dark .winner h3 { color: #3b82f6; }
+[data-theme='dark'] .winner h3 { color: #3b82f6; }
 
 .bonus {
   border-color: rgba(217, 119, 6, 0.3);
@@ -102,7 +102,7 @@ html.dark .winner h3 { color: #3b82f6; }
   justify-content: center;
   flex-shrink: 0;
 }
-html.dark .multiplier-icon {
+[data-theme='dark'] .multiplier-icon {
   color: #c084fc;
 }
 
@@ -113,7 +113,7 @@ html.dark .multiplier-icon {
   color: var(--text-primary, #1a1a1a);
 }
 
-html.dark .multiplier-text h4 {
+[data-theme='dark'] .multiplier-text h4 {
   color: #fff;
 }
 
@@ -123,7 +123,7 @@ html.dark .multiplier-text h4 {
   color: var(--text-secondary, #666);
 }
 
-html.dark .multiplier-text p {
+[data-theme='dark'] .multiplier-text p {
   color: #aaa;
 }
 
@@ -154,7 +154,7 @@ html.dark .multiplier-text p {
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
-html.dark .pill {
+[data-theme='dark'] .pill {
   background: #1e1e2d;
   border-color: rgba(255,255,255,0.1);
   color: #fff;
@@ -164,6 +164,6 @@ html.dark .pill {
   color: #9333ea;
   font-weight: 800;
 }
-html.dark .pill-x {
+[data-theme='dark'] .pill-x {
   color: #c084fc;
 }
