@@ -9,6 +9,7 @@ import Leaderboard from './pages/Leaderboard';
 import StandingsAnalysis from './pages/StandingsAnalysis';
 import Results from './pages/Results';
 import AuditLogs from './pages/AuditLogs';
+import Rules from './pages/Rules';
 import Login from './pages/Login';
 
 import ProtectedLayout from './components/layout/ProtectedRoute';
@@ -41,6 +42,7 @@ function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/analytics" element={<StandingsAnalysis />} />
           <Route path="/audit" element={<AuditLogs />} />
+          <Route path="/rules" element={<Rules />} />
         </Route>
         
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
