@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Trophy, Medal, Target, TrendingUp, X, ClipboardList, Search, RefreshCw } from 'lucide-react';
+import { Trophy, Medal, Target, TrendingUp, Activity, X, ClipboardList, Search, RefreshCw } from 'lucide-react';
 import { getLeaderboard, getAllMatchResults } from '../lib/supabase';
 import { generateGroupMatches, generateKnockoutMatches } from '../lib/worldcupData';
 import { useAuth } from '../context/AuthContext';
@@ -250,10 +250,13 @@ const Leaderboard = () => {
                 <th>#</th>
                 <th>Jugador</th>
                 <th style={{ textAlign: 'center' }}>
-                  <Target size={12} style={{ verticalAlign: '-1px' }} /> Exactos
+                  <Target size={12} style={{ verticalAlign: '-1px', marginRight: '4px' }} /> Exactos
                 </th>
                 <th style={{ textAlign: 'center' }}>
-                  <TrendingUp size={12} style={{ verticalAlign: '-1px' }} /> Ganador
+                  <Activity size={12} style={{ verticalAlign: '-1px', marginRight: '4px' }} /> Dif. Goles
+                </th>
+                <th style={{ textAlign: 'center' }}>
+                  <TrendingUp size={12} style={{ verticalAlign: '-1px', marginRight: '4px' }} /> Ganador
                 </th>
                 <th style={{ textAlign: 'right' }}>Puntos</th>
               </tr>
@@ -302,6 +305,9 @@ const Leaderboard = () => {
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span className="detail-cell">{player.exact_hits}</span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="detail-cell">{player.diff_hits}</span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <span className="detail-cell">{player.winner_hits}</span>

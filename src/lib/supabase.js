@@ -164,7 +164,9 @@ export async function getLeaderboard() {
   // Calcular puntos totales por usuario
   const pointsMap = {};
   const exactMap = {};
+  const diffMap = {};
   const winnerMap = {};
+  
   predictions.forEach((p) => {
     if (p.points_earned != null) {
       pointsMap[p.user_id] = (pointsMap[p.user_id] || 0) + p.points_earned;
@@ -173,7 +175,9 @@ export async function getLeaderboard() {
       // Clasificar tipos de aciertos basándose en los puntos y multiplicador
       if (p.points_earned === 5 * mult) {
         exactMap[p.user_id] = (exactMap[p.user_id] || 0) + 1;
-      } else if (p.points_earned === 3 * mult || p.points_earned === 1 * mult) {
+      } else if (p.points_earned === 3 * mult) {
+        diffMap[p.user_id] = (diffMap[p.user_id] || 0) + 1;
+      } else if (p.points_earned === 1 * mult) {
         winnerMap[p.user_id] = (winnerMap[p.user_id] || 0) + 1;
       }
     }
@@ -184,6 +188,7 @@ export async function getLeaderboard() {
       ...profile,
       total_points: pointsMap[profile.id] || 0,
       exact_hits: exactMap[profile.id] || 0,
+      diff_hits: diffMap[profile.id] || 0,
       winner_hits: winnerMap[profile.id] || 0,
     }))
     .sort((a, b) => b.total_points - a.total_points);
