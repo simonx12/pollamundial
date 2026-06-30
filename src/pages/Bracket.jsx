@@ -99,7 +99,7 @@ const Bracket = () => {
     <div className="page-container bracket-page">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1>Cuadro del Mundial 🏆</h1>
+          <h1><span className="gradient-text">Cuadro del Mundial</span> 🏆</h1>
           <p className="subtitle">Visualiza el camino a la gran final y registra tus pronósticos.</p>
         </div>
         <button

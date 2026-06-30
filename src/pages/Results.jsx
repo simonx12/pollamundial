@@ -196,7 +196,7 @@ const Results = () => {
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1>Resultados Reales 🏆</h1>
+          <h1><span className="gradient-text">Resultados Reales</span> 🏆</h1>
           <p className="subtitle">
             Marcadores oficiales de la Copa Mundial 2026 — actualizados en tiempo real.
           </p>

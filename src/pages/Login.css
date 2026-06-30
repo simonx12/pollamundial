@@ -78,7 +78,7 @@
 .login-logo h1 span {
   background: linear-gradient(90deg, var(--primary), var(--accent));
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-text-fill-color: white;
 }
 
 .login-subtitle {
@@ -94,7 +94,9 @@
   text-align: left;
 }
 
-.login-form .btn { margin-top: 0.5rem; }
+.login-form .btn {
+  margin-top: 0.5rem;
+}
 
 .login-switch {
   margin-top: 1.5rem;
@@ -112,7 +114,9 @@
   font-family: var(--font-body);
 }
 
-.login-switch button:hover { text-decoration: underline; }
+.login-switch button:hover {
+  text-decoration: underline;
+}
 
 .login-error {
   background: rgba(239, 68, 68, 0.1);
@@ -169,8 +173,15 @@
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(10deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(10deg);
+  }
 }
 
 @media (max-width: 480px) {

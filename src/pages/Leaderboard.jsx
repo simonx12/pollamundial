@@ -117,7 +117,7 @@ const Leaderboard = () => {
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h1>Ranking Global 🏆</h1>
+          <h1><span className="gradient-text">Ranking Global</span> 🏆</h1>
           <p className="subtitle">
             Mira quién lidera la polla mundialista y explora las predicciones de tus rivales.
           </p>

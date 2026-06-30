@@ -113,7 +113,7 @@ const Dashboard = () => {
       <header className="page-header">
         <div>
           <h1>
-            {greeting()}, {profile?.username || 'Jugador'} 👋
+            <span className="gradient-text">{greeting()}, {profile?.username || 'Jugador'}</span> 👋
           </h1>
           <p className="subtitle">
             Aquí tienes el resumen de tu participación en la polla.

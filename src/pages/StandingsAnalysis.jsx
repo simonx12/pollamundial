@@ -380,7 +380,7 @@ const StandingsAnalysis = () => {
     <div className="page-container">
       <header className="page-header">
         <div>
-          <h1>Simulador: Ganando y Eliminados 📊</h1>
+          <h1><span className="gradient-text">Simulador: Ganando y Eliminados</span> 📊</h1>
           <p className="subtitle">
             Análisis matemático en tiempo real de los participantes y el destino de los equipos del mundial.
           </p>

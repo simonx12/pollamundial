@@ -159,7 +159,7 @@ const AuditLogs = () => {
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1>Auditoría de Actividad 📜</h1>
+          <h1><span className="gradient-text">Auditoría de Actividad</span> 📜</h1>
           <p className="subtitle">
             Historial detallado de inserciones, actualizaciones y cambios en los marcadores de la polla.
           </p>

@@ -132,7 +132,7 @@ const Predictions = () => {
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1>Mis Pronósticos ⚽</h1>
+          <h1><span className="gradient-text">Mis Pronósticos</span> ⚽</h1>
           <p className="subtitle">
             Ingresa y modifica tus predicciones antes de que empiece cada partido.
           </p>
