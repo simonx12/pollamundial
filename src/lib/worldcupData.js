@@ -239,6 +239,302 @@ export function generateKnockoutMatches() {
   return matches;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   SISTEMA DE RESOLUCIÓN DINÁMICA DEL BRACKET ELIMINATORIO
+   Resuelve equipos reales a partir de resultados de fase de grupos
+   ═══════════════════════════════════════════════════════════════ */
+
+// Precalcular mapa matchNum ↔ matchId (es estático, depende solo del JSON)
+function buildMatchNumToIdMap() {
+  const map = {};
+  const counts = {};
+  const stageMap = {
+    'Round of 32': 'R32', 'Round of 16': 'R16',
+    'Quarter-final': 'QF', 'Semi-final': 'SF', 'Final': 'F',
+  };
+
+  worldcupJson.matches.forEach(m => {
+    if (m.group || !m.num) return;
+    const stage = stageMap[m.round];
+    if (!stage) return;
+    counts[stage] = (counts[stage] || 0) + 1;
+    map[m.num] = `KO-${stage}-${counts[stage]}`;
+  });
+
+  return map;
+}
+
+export const MATCH_NUM_TO_ID = buildMatchNumToIdMap();
+
+// Mapa inverso: matchId → matchNum
+const MATCH_ID_TO_NUM = {};
+Object.entries(MATCH_NUM_TO_ID).forEach(([num, id]) => {
+  MATCH_ID_TO_NUM[id] = parseInt(num);
+});
+
+/**
+ * Calcula las tablas de posiciones de todos los grupos a partir de match_results
+ * @param {Array} matchResults - Resultados de Supabase [{match_id, home_score, away_score, status}]
+ * @returns {Object} standings por grupo, cada grupo es un array ordenado de equipos
+ */
+export function calculateGroupStandings(matchResults) {
+  const groupMatches = generateGroupMatches();
+  const resultMap = {};
+  matchResults.forEach(r => { resultMap[r.match_id] = r; });
+
+  // Inicializar standings para cada grupo
+  const standings = {};
+  Object.keys(GROUPS).forEach(g => {
+    standings[g] = {};
+    GROUPS[g].forEach(code => {
+      standings[g][code] = {
+        code, played: 0, won: 0, drawn: 0, lost: 0,
+        gf: 0, ga: 0, gd: 0, pts: 0,
+      };
+    });
+  });
+
+  // Procesar cada partido de grupos con resultado
+  groupMatches.forEach(match => {
+    const res = resultMap[match.id];
+    if (!res) return;
+
+    const g = match.group.replace('Grupo ', '');
+    const h = standings[g]?.[match.homeCode];
+    const a = standings[g]?.[match.awayCode];
+    if (!h || !a) return;
+
+    h.played++; a.played++;
+    h.gf += res.home_score; h.ga += res.away_score;
+    a.gf += res.away_score; a.ga += res.home_score;
+
+    if (res.home_score > res.away_score) {
+      h.won++; h.pts += 3; a.lost++;
+    } else if (res.home_score < res.away_score) {
+      a.won++; a.pts += 3; h.lost++;
+    } else {
+      h.drawn++; h.pts += 1; a.drawn++; a.pts += 1;
+    }
+
+    h.gd = h.gf - h.ga;
+    a.gd = a.gf - a.ga;
+  });
+
+  // Ordenar cada grupo: puntos → diferencia de gol → goles a favor
+  const sorted = {};
+  Object.keys(standings).forEach(g => {
+    sorted[g] = Object.values(standings[g]).sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      return 0;
+    });
+  });
+
+  return sorted;
+}
+
+/**
+ * Obtiene los 8 mejores terceros de entre los 12 grupos
+ */
+export function getBest3rdPlaceTeams(standings) {
+  const thirds = [];
+  Object.keys(standings).forEach(g => {
+    if (standings[g].length >= 3) {
+      thirds.push({ ...standings[g][2], group: g });
+    }
+  });
+
+  thirds.sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return 0;
+  });
+
+  return thirds.slice(0, 8);
+}
+
+// Definición de qué terceros pueden ir a cada slot de R32 (del JSON oficial)
+const THIRD_PLACE_SLOTS = [
+  { num: 74, possibleGroups: ['A','B','C','D','F'] },
+  { num: 77, possibleGroups: ['C','D','F','G','H'] },
+  { num: 79, possibleGroups: ['C','E','F','H','I'] },
+  { num: 80, possibleGroups: ['E','H','I','J','K'] },
+  { num: 81, possibleGroups: ['B','E','F','I','J'] },
+  { num: 82, possibleGroups: ['A','E','H','I','J'] },
+  { num: 85, possibleGroups: ['E','F','G','I','J'] },
+  { num: 87, possibleGroups: ['D','E','I','J','L'] },
+];
+
+/**
+ * Asigna terceros a slots de R32 usando backtracking (constraint satisfaction)
+ * @param {string[]} qualifiedGroups - Letras de los 8 grupos cuyos terceros clasificaron
+ * @returns {Object} matchNum → grupo del tercer clasificado asignado
+ */
+function assign3rdPlaceToSlots(qualifiedGroups) {
+  const assigned = {};
+  const used = new Set();
+
+  // Ordenar slots por restricción (menos opciones primero → más eficiente)
+  const slots = [...THIRD_PLACE_SLOTS].sort((a, b) => {
+    const aOpts = a.possibleGroups.filter(g => qualifiedGroups.includes(g)).length;
+    const bOpts = b.possibleGroups.filter(g => qualifiedGroups.includes(g)).length;
+    return aOpts - bOpts;
+  });
+
+  function solve(i) {
+    if (i === slots.length) return true;
+    const slot = slots[i];
+    for (const g of slot.possibleGroups) {
+      if (!qualifiedGroups.includes(g) || used.has(g)) continue;
+      assigned[slot.num] = g;
+      used.add(g);
+      if (solve(i + 1)) return true;
+      delete assigned[slot.num];
+      used.delete(g);
+    }
+    return false;
+  }
+
+  solve(0);
+  return assigned;
+}
+
+/**
+ * Resuelve la referencia de un equipo en el JSON knockout a un código real
+ * @param {string} teamStr - Ej: "1A", "2B", "3A/B/C/D/F", "W74", "L101"
+ * @param {number} matchNum - Número del partido (para saber el slot de 3er puesto)
+ * @param {Object} standings - Tablas de posiciones calculadas
+ * @param {Object} thirdAssign - Asignación de terceros a slots
+ * @param {Object} thirdLookup - Mapa grupo → código de equipo tercer clasificado
+ * @param {Object} resolvedByNum - Equipos ya resueltos por número de partido
+ * @param {Object} resultMap - Resultados reales por match_id
+ */
+function resolveTeamRef(teamStr, matchNum, standings, thirdAssign, thirdLookup, resolvedByNum, resultMap) {
+  if (!teamStr) return null;
+
+  // "1A" or "2B" → 1° o 2° del grupo
+  const rankMatch = teamStr.match(/^([12])([A-L])$/);
+  if (rankMatch) {
+    const rank = parseInt(rankMatch[1]) - 1;
+    const group = rankMatch[2];
+    return standings[group]?.[rank]?.code || null;
+  }
+
+  // "3A/B/C/D/F" → 3er clasificado asignado a este slot
+  const thirdMatch = teamStr.match(/^3([A-L/]+)$/);
+  if (thirdMatch) {
+    const assignedGroup = thirdAssign[matchNum];
+    return assignedGroup ? (thirdLookup[assignedGroup] || null) : null;
+  }
+
+  // "W74" → ganador del partido 74
+  const winMatch = teamStr.match(/^W(\d+)$/);
+  if (winMatch) {
+    const refNum = parseInt(winMatch[1]);
+    const matchId = MATCH_NUM_TO_ID[refNum];
+    if (!matchId) return null;
+    const result = resultMap[matchId];
+    const teams = resolvedByNum[refNum];
+    if (!result || !teams) return null;
+    if (result.home_score > result.away_score) return teams.home;
+    if (result.away_score > result.home_score) return teams.away;
+    // Empate en eliminatoria con penales: tratamos el home como ganador si scores son iguales
+    // (la API debería reportar el score post-penales pero a veces no)
+    return null;
+  }
+
+  // "L101" → perdedor del partido 101
+  const loseMatch = teamStr.match(/^L(\d+)$/);
+  if (loseMatch) {
+    const refNum = parseInt(loseMatch[1]);
+    const matchId = MATCH_NUM_TO_ID[refNum];
+    if (!matchId) return null;
+    const result = resultMap[matchId];
+    const teams = resolvedByNum[refNum];
+    if (!result || !teams) return null;
+    if (result.home_score > result.away_score) return teams.away;
+    if (result.away_score > result.home_score) return teams.home;
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Función principal: toma los partidos de knockout (con placeholders) y los resultados,
+ * y devuelve los mismos partidos pero con equipos reales resueltos.
+ * 
+ * @param {Array} knockoutMatches - Del generateKnockoutMatches()
+ * @param {Array} matchResults - Resultados de Supabase [{match_id, home_score, away_score, status}]
+ * @returns {Array} Partidos knockout con equipos reales donde sea posible
+ */
+export function resolveKnockoutMatchTeams(knockoutMatches, matchResults) {
+  if (!matchResults || matchResults.length === 0) return knockoutMatches;
+
+  // 1. Calcular standings de grupos
+  const standings = calculateGroupStandings(matchResults);
+
+  // Verificar si al menos hay partidos suficientes de grupos jugados
+  // (necesitamos 3 partidos por equipo para standings completos, pero resolvemos lo que se pueda)
+  const anyGroupHasResults = Object.values(standings).some(g =>
+    g.some(team => team.played > 0)
+  );
+  if (!anyGroupHasResults) return knockoutMatches;
+
+  // 2. Calcular mejores terceros y asignar a slots
+  const best3rd = getBest3rdPlaceTeams(standings);
+  const qualifiedGroups = best3rd.map(t => t.group);
+  const thirdLookup = {};
+  best3rd.forEach(t => { thirdLookup[t.group] = t.code; });
+  const thirdAssign = assign3rdPlaceToSlots(qualifiedGroups);
+
+  // 3. Construir mapa de resultados
+  const resultMap = {};
+  matchResults.forEach(r => { resultMap[r.match_id] = r; });
+
+  // 4. Resolver equipos en orden de fase (R32 → R16 → QF → SF → F)
+  const resolvedByNum = {};
+  const jsonKnockouts = worldcupJson.matches.filter(m => !m.group && m.num);
+
+  const stageOrder = ['Round of 32', 'Round of 16', 'Quarter-final', 'Semi-final', 'Final'];
+
+  for (const stageName of stageOrder) {
+    const stageJsonMatches = jsonKnockouts.filter(m => m.round === stageName);
+
+    for (const jm of stageJsonMatches) {
+      const homeCode = resolveTeamRef(jm.team1, jm.num, standings, thirdAssign, thirdLookup, resolvedByNum, resultMap);
+      const awayCode = resolveTeamRef(jm.team2, jm.num, standings, thirdAssign, thirdLookup, resolvedByNum, resultMap);
+      resolvedByNum[jm.num] = { home: homeCode, away: awayCode };
+    }
+  }
+
+  // 5. Mapear equipos resueltos de vuelta a los objetos de partidos
+  return knockoutMatches.map(match => {
+    const matchNum = MATCH_ID_TO_NUM[match.id];
+    if (!matchNum) return match;
+
+    const resolved = resolvedByNum[matchNum];
+    if (!resolved) return match;
+
+    const newMatch = { ...match };
+
+    if (resolved.home && TEAMS[resolved.home]) {
+      newMatch.homeTeam = TEAMS[resolved.home].name;
+      newMatch.homeCode = resolved.home;
+      newMatch.homeFlag = TEAMS[resolved.home].flag;
+    }
+    if (resolved.away && TEAMS[resolved.away]) {
+      newMatch.awayTeam = TEAMS[resolved.away].name;
+      newMatch.awayCode = resolved.away;
+      newMatch.awayFlag = TEAMS[resolved.away].flag;
+    }
+
+    return newMatch;
+  });
+}
+
 /**
  * Sistema de puntuación de la polla (Nueva regla 5-3-1 y multiplicadores por fase)
  */

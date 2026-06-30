@@ -214,3 +214,11 @@ export async function getAuditLogs() {
   return data;
 }
 
+/* ─── Regalar puntos R32 ─── */
+export async function giftR32Points() {
+  const { data, error } = await supabase.rpc('gift_r32_points');
+  if (error) throw error;
+  return data;
+}
+
+

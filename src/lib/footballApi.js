@@ -6,8 +6,8 @@
  * La ESPN API es la fuente principal porque SÍ devuelve scores en tiempo real.
  */
 
-import { generateGroupMatches, generateKnockoutMatches, TEAM_MAPPING } from './worldcupData';
-import { saveMatchResult } from './supabase';
+import { generateGroupMatches, generateKnockoutMatches, resolveKnockoutMatchTeams, TEAM_MAPPING } from './worldcupData';
+import { saveMatchResult, getAllMatchResults } from './supabase';
 
 // ─── ESPN API (Primary Source) ───
 const ESPN_API = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
@@ -170,10 +170,13 @@ export async function syncLiveResultsToSupabase(force = false) {
   localStorage.setItem('last_results_sync', now.toString());
   console.log('🔄 Iniciando sincronización de resultados...');
 
-  // Get all local matches
+  // Get all local matches — resolve knockout teams using existing results
+  const existingResults = await getAllMatchResults().catch(() => []);
+  const rawKnockouts = generateKnockoutMatches();
+  const resolvedKnockouts = resolveKnockoutMatchTeams(rawKnockouts, existingResults);
   const localMatches = [
     ...generateGroupMatches(),
-    ...generateKnockoutMatches()
+    ...resolvedKnockouts,
   ];
 
   let updatedCount = 0;

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Printer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateGroupMatches, GROUPS, getMatchMultiplier, calculateMatchPoints } from '../lib/worldcupData';
+import { generateGroupMatches, generateKnockoutMatches, resolveKnockoutMatchTeams, GROUPS, getMatchMultiplier, calculateMatchPoints } from '../lib/worldcupData';
 import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/supabase';
+import { syncLiveResultsToSupabase } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
 import './Pages.css';
@@ -18,7 +19,12 @@ const Predictions = () => {
   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, PENDING, FINISHED
   const [dateOrder, setDateOrder] = useState('ASC');
 
-  const allMatches = useMemo(() => generateGroupMatches(), []);
+  const allMatches = useMemo(() => {
+    const groupMatches = generateGroupMatches();
+    const rawKnockouts = generateKnockoutMatches();
+    const resolvedKnockouts = resolveKnockoutMatchTeams(rawKnockouts, results);
+    return [...groupMatches, ...resolvedKnockouts];
+  }, [results]);
 
   useEffect(() => {
     if (user?.id) loadData();
@@ -26,6 +32,9 @@ const Predictions = () => {
 
   async function loadData() {
     try {
+      // Sincronizar resultados reales en segundo plano (con throttle interno)
+      await syncLiveResultsToSupabase(false).catch(() => {});
+
       const [preds, res] = await Promise.all([
         getUserPredictions(user.id).catch(() => []),
         getAllMatchResults().catch(() => []),
@@ -54,7 +63,11 @@ const Predictions = () => {
 
     // Group filter
     if (activeGroup !== 'ALL') {
-      matches = matches.filter((m) => m.group === `Grupo ${activeGroup}`);
+      if (['Dieciseisavos', 'Octavos', 'Cuartos', 'Semifinales', 'Final'].includes(activeGroup)) {
+        matches = matches.filter((m) => m.group === activeGroup);
+      } else {
+        matches = matches.filter((m) => m.group === `Grupo ${activeGroup}`);
+      }
     }
 
     // Status filter
@@ -91,7 +104,15 @@ const Predictions = () => {
     loadData();
   };
 
-  const groups = ['ALL', ...Object.keys(GROUPS)];
+  const groups = [
+    'ALL', 
+    ...Object.keys(GROUPS), 
+    'Dieciseisavos', 
+    'Octavos', 
+    'Cuartos', 
+    'Semifinales', 
+    'Final'
+  ];
 
   const completionStats = useMemo(() => {
     const total = allMatches.length;
@@ -235,7 +256,7 @@ const Predictions = () => {
               className={`filter-tab ${activeGroup === g ? 'active' : ''}`}
               onClick={() => setActiveGroup(g)}
             >
-              {g === 'ALL' ? 'Todos' : `Grupo ${g}`}
+              {g === 'ALL' ? 'Todos' : ['Dieciseisavos', 'Octavos', 'Cuartos', 'Semifinales', 'Final'].includes(g) ? g : `Grupo ${g}`}
             </button>
           ))}
         </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Search, RotateCw, CheckCircle, Clock, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import { Search, RotateCw, CheckCircle, Clock, AlertTriangle, Wifi, WifiOff, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { generateGroupMatches, generateKnockoutMatches, GROUPS } from '../lib/worldcupData';
-import { getAllMatchResults, saveMatchResult, calculatePoints } from '../lib/supabase';
+import { getAllMatchResults, saveMatchResult, calculatePoints, giftR32Points } from '../lib/supabase';
 import { syncLiveResultsToSupabase, getLiveScoreboard } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
 import MatchResultCard from '../components/match/MatchResultCard';
@@ -20,11 +20,31 @@ const Results = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [dateOrder, setDateOrder] = useState('ASC');
   const [syncing, setSyncing] = useState(false);
+  const [gifting, setGifting] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(null);
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const intervalRef = useRef(null);
   const tickRef = useRef(null);
+
+  const handleGiftR32Points = async () => {
+    setGifting(true);
+    try {
+      const res = await giftR32Points();
+      if (res && res.success) {
+        addToast(`¡Éxito! Se actualizaron ${res.predictions_updated} pronósticos para ${res.total_players} jugadores ✓`, 'success');
+      } else {
+        addToast('Puntos de 16avos regalados ✓', 'success');
+      }
+      loadResults();
+    } catch (err) {
+      console.error('Error gifting points:', err);
+      addToast('Error al regalar puntos. Asegúrate de ejecutar el script SQL en Supabase.', 'error');
+    } finally {
+      setGifting(false);
+    }
+  };
+
 
   const allMatches = useMemo(() => {
     return [
@@ -240,6 +260,16 @@ const Results = () => {
           >
             <RotateCw size={16} className={syncing ? 'animate-spin' : ''} />
             {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </button>
+
+          <button
+            className="btn btn-accent"
+            onClick={handleGiftR32Points}
+            disabled={syncing || gifting}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff' }}
+          >
+            <Zap size={16} className={gifting ? 'animate-pulse' : ''} />
+            {gifting ? 'Regalando...' : 'Regalar Puntos R32'}
           </button>
         </div>
       </header>

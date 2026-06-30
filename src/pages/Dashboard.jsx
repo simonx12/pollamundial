@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Target, TrendingUp, DollarSign, CalendarDays, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateGroupMatches, getMatchMultiplier } from '../lib/worldcupData';
+import { generateGroupMatches, generateKnockoutMatches, resolveKnockoutMatchTeams, getMatchMultiplier } from '../lib/worldcupData';
 import { getUserPredictions, getAllMatchResults, getLeaderboard, savePrediction } from '../lib/supabase';
+import { syncLiveResultsToSupabase } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
 import './Pages.css';
@@ -17,11 +18,19 @@ const Dashboard = () => {
   const [results, setResults] = useState([]);
   const [players, setPlayers] = useState([]);
 
-  const allMatches = useMemo(() => generateGroupMatches(), []);
+  const allMatches = useMemo(() => {
+    const groupMatches = generateGroupMatches();
+    const rawKnockouts = generateKnockoutMatches();
+    const resolvedKnockouts = resolveKnockoutMatchTeams(rawKnockouts, results);
+    return [...groupMatches, ...resolvedKnockouts];
+  }, [results]);
 
   const loadData = useCallback(async () => {
     if (!user?.id) return;
     try {
+      // Sincronizar resultados reales en segundo plano (con throttle interno)
+      await syncLiveResultsToSupabase(false).catch(() => {});
+
       const [preds, res, leaders] = await Promise.all([
         getUserPredictions(user.id).catch(() => []),
         getAllMatchResults().catch(() => []),
@@ -34,6 +43,7 @@ const Dashboard = () => {
       console.error('Error loading dashboard data:', err);
     }
   }, [user?.id]);
+
 
   // Initial load
   useEffect(() => {

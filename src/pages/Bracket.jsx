@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { generateKnockoutMatches, getMatchMultiplier, calculateMatchPoints } from '../lib/worldcupData';
+import { generateKnockoutMatches, getMatchMultiplier, calculateMatchPoints, resolveKnockoutMatchTeams } from '../lib/worldcupData';
 import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/supabase';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
@@ -13,8 +13,6 @@ const Bracket = () => {
   const { addToast } = useToast();
   const [predictions, setPredictions] = useState([]);
   const [results, setResults] = useState([]);
-
-  const knockoutMatches = useMemo(() => generateKnockoutMatches(), []);
 
   useEffect(() => {
     if (user?.id) loadData();
@@ -32,6 +30,11 @@ const Bracket = () => {
       console.error('Error loading bracket data:', err);
     }
   }
+
+  const resolvedKnockoutMatches = useMemo(() => {
+    const rawMatches = generateKnockoutMatches();
+    return resolveKnockoutMatchTeams(rawMatches, results);
+  }, [results]);
 
   const predictionMap = useMemo(() => {
     const map = {};
@@ -53,11 +56,11 @@ const Bracket = () => {
 
   // Organize matches by stage for the visual bracket
   const stages = {
-    R32: knockoutMatches.filter(m => m.stage === 'R32'),
-    R16: knockoutMatches.filter(m => m.stage === 'R16'),
-    QF: knockoutMatches.filter(m => m.stage === 'QF'),
-    SF: knockoutMatches.filter(m => m.stage === 'SF'),
-    F: knockoutMatches.filter(m => m.stage === 'F'),
+    R32: resolvedKnockoutMatches.filter(m => m.stage === 'R32'),
+    R16: resolvedKnockoutMatches.filter(m => m.stage === 'R16'),
+    QF: resolvedKnockoutMatches.filter(m => m.stage === 'QF'),
+    SF: resolvedKnockoutMatches.filter(m => m.stage === 'SF'),
+    F: resolvedKnockoutMatches.filter(m => m.stage === 'F'),
   };
 
   const scoringStats = useMemo(() => {
@@ -65,7 +68,7 @@ const Bracket = () => {
     let winner = 0;
     let wrong = 0;
     let totalPoints = 0;
-    knockoutMatches.forEach(m => {
+    resolvedKnockoutMatches.forEach(m => {
       const pred = predictionMap[m.id];
       const res = resultMap[m.id];
       if (res) {
@@ -87,13 +90,13 @@ const Bracket = () => {
       }
     });
     return { exact, winner, wrong, totalPoints };
-  }, [knockoutMatches, predictionMap, resultMap]);
+  }, [resolvedKnockoutMatches, predictionMap, resultMap]);
 
   const completionStats = useMemo(() => {
-    const total = knockoutMatches.length;
-    const predicted = knockoutMatches.filter((m) => predictionMap[m.id]).length;
+    const total = resolvedKnockoutMatches.length;
+    const predicted = resolvedKnockoutMatches.filter((m) => predictionMap[m.id]).length;
     return { total, predicted, percentage: total > 0 ? Math.round((predicted / total) * 100) : 0 };
-  }, [knockoutMatches, predictionMap]);
+  }, [resolvedKnockoutMatches, predictionMap]);
 
   return (
     <div className="page-container bracket-page">
@@ -114,12 +117,12 @@ const Bracket = () => {
 
       <div className="bracket-wrapper">
         <div className="bracket-container">
-          {/* R16 onwards to match the user's image style */}
-          {['R16', 'QF', 'SF', 'F'].map((stageId) => (
+          {/* R32 onwards */}
+          {['R32', 'R16', 'QF', 'SF', 'F'].map((stageId) => (
             <div key={stageId} className={`bracket-column stage-${stageId}`}>
               <h3 className="stage-title">{stages[stageId][0]?.group}</h3>
               <div className="bracket-matches">
-                {stages[stageId].map((match) => (
+                {stages[stageId]?.map((match) => (
                   <div key={match.id} className="bracket-match-item">
                     <MatchCard
                       match={match}
@@ -177,7 +180,7 @@ const Bracket = () => {
               </tr>
             </thead>
             <tbody>
-              {knockoutMatches.map((match) => {
+              {resolvedKnockoutMatches.map((match) => {
                 const pred = predictionMap[match.id];
                 const res = resultMap[match.id];
                 let pointsText = '-';
