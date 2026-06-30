@@ -2,22 +2,20 @@
 -- 🎁 SQL SCRIPT: REGALAR PUNTOS DE DIECISEISAVOS (KO-R32) JUGADOS 🎁
 -- =====================================================================
 -- Ejecuta este script en el "SQL Editor" de tu panel de Supabase.
--- Creará la función RPC `gift_r32_points()` que otorga marcador exacto
--- (10 puntos) a todos los usuarios para los partidos de 16avos finalizados.
+-- Creará la función RPC `gift_r32_points()` que otorga exactamente
+-- 3 puntos de compensación a todos los usuarios para los partidos de 16avos finalizados.
 
 CREATE OR REPLACE FUNCTION gift_r32_points()
 RETURNS jsonb AS $$
 DECLARE
     r RECORD;
     p RECORD;
-    v_multiplier INTEGER;
     v_points INTEGER;
     v_count INTEGER := 0;
     v_players INTEGER := 0;
 BEGIN
-    -- Multiplicador para KO-R32 es 2, marcador exacto (5) * 2 = 10 puntos
-    v_multiplier := 2;
-    v_points := 5 * v_multiplier;
+    -- 3 puntos de compensación por partido de 16avos ya jugado
+    v_points := 3;
 
     -- Contar jugadores
     SELECT COUNT(*) INTO v_players FROM profiles;
@@ -32,7 +30,7 @@ BEGIN
         FOR p IN 
             SELECT id FROM profiles
         LOOP
-            -- Hacer upsert de la predicción con el marcador exacto y los puntos correspondientes
+            -- Hacer upsert de la predicción con el marcador real, pero forzando 3 puntos de compensación
             INSERT INTO predictions (user_id, match_id, home_score, away_score, points_earned, updated_at)
             VALUES (p.id, r.match_id, r.home_score, r.away_score, v_points, now())
             ON CONFLICT (user_id, match_id) 
