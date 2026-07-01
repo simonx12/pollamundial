@@ -204,15 +204,6 @@ export async function calculatePoints(matchId, realHome, realAway) {
   return true;
 }
 
-/* ─── Audit Logs ─── */
-export async function getAuditLogs() {
-  const { data, error } = await supabase
-    .from('audit_logs')
-    .select('*, profiles(username)')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
-}
 
 /* ─── Regalar puntos R32 ─── */
 export async function giftR32Points() {
