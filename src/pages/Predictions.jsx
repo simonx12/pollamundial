@@ -6,6 +6,7 @@ import { getUserPredictions, savePrediction, getAllMatchResults } from '../lib/s
 import { syncLiveResultsToSupabase } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
 import MatchCard from '../components/match/MatchCard';
+import CustomBall from '../components/ui/CustomBall';
 import './Pages.css';
 
 const Predictions = () => {
@@ -153,7 +154,7 @@ const Predictions = () => {
     <div className="page-container">
       <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1><span className="gradient-text">Mis Pronósticos</span> ⚽</h1>
+          <h1><span className="gradient-text">Mis Pronósticos</span> <CustomBall size="1.2em" style={{ marginLeft: '6px' }} /></h1>
           <p className="subtitle">
             Ingresa y modifica tus predicciones antes de que empiece cada partido.
           </p>

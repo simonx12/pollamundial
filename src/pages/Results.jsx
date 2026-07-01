@@ -6,6 +6,7 @@ import { getAllMatchResults, saveMatchResult, calculatePoints, giftR32Points } f
 import { syncLiveResultsToSupabase, getLiveScoreboard } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
 import MatchResultCard from '../components/match/MatchResultCard';
+import CustomBall from '../components/ui/CustomBall';
 import './Pages.css';
 
 const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
@@ -391,7 +392,9 @@ const Results = () => {
 
       {filteredMatches.length === 0 && (
         <div className="glass-panel empty-state">
-          <span className="empty-icon">⚽</span>
+          <span className="empty-icon">
+            <CustomBall size="3rem" />
+          </span>
           <h3>No se encontraron partidos</h3>
           <p>Prueba ajustando los filtros de búsqueda o fase.</p>
         </div>

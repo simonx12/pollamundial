@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ui/ThemeToggle';
+import CustomBall from '../components/ui/CustomBall';
 import './Login.css';
 
 const Login = () => {
@@ -67,7 +68,9 @@ const Login = () => {
       
       <div className="login-card glass-panel">
         <div className="login-logo">
-          <div className="logo-icon">⚽</div>
+          <div className="logo-icon">
+            <CustomBall size="1.2em" />
+          </div>
           <h1>
             Polla<span>Mundial</span>
           </h1>
@@ -158,7 +161,9 @@ const Login = () => {
       </div>
 
       {/* Decorative elements */}
-      <div className="login-decoration login-decoration-1">⚽</div>
+      <div className="login-decoration login-decoration-1">
+        <CustomBall size="1.2em" />
+      </div>
       <div className="login-decoration login-decoration-2">🏆</div>
       <div className="login-decoration login-decoration-3">🥅</div>
     </div>

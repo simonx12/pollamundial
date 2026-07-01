@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { Home, CalendarDays, Trophy, LogOut, X, BarChart3, ClipboardList, History, HelpCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../ui/ThemeToggle';
+import CustomBall from '../ui/CustomBall';
 import './Sidebar.css';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -26,7 +27,9 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         <div className="sidebar-header">
           <div className="logo">
-            <div className="logo-icon">26</div>
+            <div className="logo-icon">
+              <CustomBall size="28px" />
+            </div>
             <h1 className="logo-text">
               Polla<span>Mundial</span>
             </h1>
