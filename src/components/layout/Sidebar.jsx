@@ -62,10 +62,6 @@ const Sidebar = ({ isOpen, onClose }) => {
             <BarChart3 size={20} />
             <span>Simulador</span>
           </NavLink>
-          <NavLink to="/audit" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
-            <History size={20} />
-            <span>Auditoría</span>
-          </NavLink>
           <NavLink to="/rules" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} onClick={onClose}>
             <HelpCircle size={20} />
             <span>Reglas</span>
