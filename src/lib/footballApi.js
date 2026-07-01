@@ -208,10 +208,12 @@ export async function syncLiveResultsToSupabase(force = false) {
       if (normalized.status !== 'FINISHED' && normalized.status !== 'LIVE') continue;
       if (normalized.homeScore === null || normalized.awayScore === null) continue;
 
-      // Find matching local match
-      const localMatch = localMatches.find(m =>
-        (m.homeCode === normalized.homeCode && m.awayCode === normalized.awayCode)
-      );
+      // Find matching local match (matching codes AND date within 24 hours to avoid matching friendlies/other leagues)
+      const localMatch = localMatches.find(m => {
+        if (m.homeCode !== normalized.homeCode || m.awayCode !== normalized.awayCode) return false;
+        const diffMs = Math.abs(new Date(m.date).getTime() - new Date(normalized.date).getTime());
+        return diffMs <= 24 * 60 * 60 * 1000;
+      });
 
       if (!localMatch) {
         console.log(`  ⚠️ No local match found for ${normalized.homeTeamName} vs ${normalized.awayTeamName} (${normalized.homeCode} vs ${normalized.awayCode})`);
@@ -257,9 +259,11 @@ export async function syncLiveResultsToSupabase(force = false) {
           const awayCode = apiMatch.awayTeam?.tla;
           if (!homeCode || !awayCode) continue;
 
-          const localMatch = localMatches.find(m =>
-            m.homeCode === homeCode && m.awayCode === awayCode
-          );
+          const localMatch = localMatches.find(m => {
+            if (m.homeCode !== homeCode || m.awayCode !== awayCode) return false;
+            const diffMs = Math.abs(new Date(m.date).getTime() - new Date(apiMatch.utcDate).getTime());
+            return diffMs <= 24 * 60 * 60 * 1000;
+          });
           if (!localMatch) continue;
 
           // Evitar guardar resultados de partidos futuros (permitimos 2 horas de margen)
