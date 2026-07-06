@@ -138,13 +138,25 @@ function normalizeEspnEvent(event) {
   if (statusType === 'STATUS_FULL_TIME') status = 'FINISHED';
   else if (['STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_FIRST_HALF', 'STATUS_SECOND_HALF'].includes(statusType)) status = 'LIVE';
 
+  let homeScore = home.score != null ? parseInt(home.score, 10) : null;
+  let awayScore = away.score != null ? parseInt(away.score, 10) : null;
+
+  // Handle draw in knockout matches (shootouts)
+  if (status === 'FINISHED' && homeScore === awayScore && homeScore !== null) {
+    if (home.winner === true) {
+      homeScore += 1;
+    } else if (away.winner === true) {
+      awayScore += 1;
+    }
+  }
+
   return {
     homeTeamName: home.team?.name || 'TBD',
     awayTeamName: away.team?.name || 'TBD',
     homeCode: normalizeTeamName(home.team?.name) || home.team?.abbreviation,
     awayCode: normalizeTeamName(away.team?.name) || away.team?.abbreviation,
-    homeScore: home.score != null ? parseInt(home.score, 10) : null,
-    awayScore: away.score != null ? parseInt(away.score, 10) : null,
+    homeScore,
+    awayScore,
     status,
     statusDetail: competition.status?.type?.detail || '',
     date: event.date,

@@ -373,6 +373,21 @@ const THIRD_PLACE_SLOTS = [
  * @returns {Object} matchNum → grupo del tercer clasificado asignado
  */
 function assign3rdPlaceToSlots(qualifiedGroups) {
+  // Check if we have the official qualified groups for the 2026 World Cup
+  const sortedStr = [...qualifiedGroups].sort().join(',');
+  if (sortedStr === 'B,D,E,F,I,J,K,L') {
+    return {
+      74: 'D', // Germany (1E) vs Paraguay (3D)
+      77: 'F', // France (1I) vs Sweden (3F)
+      79: 'E', // Mexico (1A) vs Ecuador (3E)
+      80: 'K', // England (1L) vs Congo DR (3K)
+      81: 'B', // United States (1D) vs Bosnia-Herzegovina (3B)
+      82: 'I', // Belgium (1G) vs Senegal (3I)
+      85: 'J', // Switzerland (1B) vs Algeria (3J)
+      87: 'L'  // Colombia (1K) vs Ghana (3L)
+    };
+  }
+
   const assigned = {};
   const used = new Set();
 

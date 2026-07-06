@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Search, RotateCw, CheckCircle, Clock, AlertTriangle, Wifi, WifiOff, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { generateGroupMatches, generateKnockoutMatches, GROUPS } from '../lib/worldcupData';
+import { generateGroupMatches, generateKnockoutMatches, resolveKnockoutMatchTeams, GROUPS } from '../lib/worldcupData';
 import { getAllMatchResults, saveMatchResult, calculatePoints } from '../lib/supabase';
 import { syncLiveResultsToSupabase, getLiveScoreboard } from '../lib/footballApi';
 import { useToast } from '../components/ui/Toast';
@@ -29,11 +29,14 @@ const Results = () => {
 
 
   const allMatches = useMemo(() => {
+    const groupMatches = generateGroupMatches();
+    const rawKnockouts = generateKnockoutMatches();
+    const resolvedKnockouts = resolveKnockoutMatchTeams(rawKnockouts, results);
     return [
-      ...generateGroupMatches(),
-      ...generateKnockoutMatches(),
+      ...groupMatches,
+      ...resolvedKnockouts,
     ];
-  }, []);
+  }, [results]);
 
   const loadResults = useCallback(async () => {
     try {
