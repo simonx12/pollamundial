@@ -28,9 +28,7 @@ const Dashboard = () => {
   const loadData = useCallback(async () => {
     if (!user?.id) return;
     try {
-      // Sincronizar resultados reales en segundo plano (con throttle interno)
-      await syncLiveResultsToSupabase(false).catch(() => {});
-
+      // 1. Cargar datos locales de inmediato para render rápido
       const [preds, res, leaders] = await Promise.all([
         getUserPredictions(user.id).catch(() => []),
         getAllMatchResults().catch(() => []),
@@ -39,6 +37,24 @@ const Dashboard = () => {
       setPredictions(preds || []);
       setResults(res || []);
       setPlayers(leaders || []);
+
+      // 2. Ejecutar la sincronización en segundo plano sin bloquear la página
+      syncLiveResultsToSupabase(false)
+        .then((syncRes) => {
+          if (syncRes && syncRes.updatedCount > 0) {
+            // Si hubo partidos actualizados, recargar silenciosamente
+            Promise.all([
+              getUserPredictions(user.id).catch(() => []),
+              getAllMatchResults().catch(() => []),
+              getLeaderboard().catch(() => []),
+            ]).then(([newPreds, newRes, newLeaders]) => {
+              setPredictions(newPreds || []);
+              setResults(newRes || []);
+              setPlayers(newLeaders || []);
+            });
+          }
+        })
+        .catch(() => {});
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     }
