@@ -11,7 +11,7 @@ import Results from './pages/Results';
 import Rules from './pages/Rules';
 import Login from './pages/Login';
 
-import ProtectedLayout from './components/layout/ProtectedRoute';
+import ProtectedLayout from './components/layout/ProtectedLayout';
 
 function App() {
   const { user } = useAuth();

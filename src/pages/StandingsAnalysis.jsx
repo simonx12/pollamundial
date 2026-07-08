@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Trophy, Users, TrendingUp, HelpCircle, Shield, Award, AlertCircle, RefreshCw, BarChart2 } from 'lucide-react';
 import { getLeaderboard, getAllMatchResults, getUserPredictions } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -13,11 +13,7 @@ const StandingsAnalysis = () => {
   const [userPredictions, setUserPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [user?.id]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [leaderboardData, matchResults, preds] = await Promise.all([
@@ -34,7 +30,11 @@ const StandingsAnalysis = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Partidos estáticos de referencia (Grupos + Eliminatorias)
   const allMatches = useMemo(() => {
