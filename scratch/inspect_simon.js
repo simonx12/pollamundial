@@ -6,25 +6,26 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function inspect() {
-  const { data: profiles, error: pErr } = await supabase.from('profiles').select('*');
+  const { data: profiles } = await supabase.from('profiles').select('*');
   const simon = profiles?.find(p => p.username.toLowerCase().includes('simon') || p.username.toLowerCase().includes('correa'));
   console.log('SIMON PROFILE:', simon);
 
   if (simon) {
-    const { data: predictions, error: prErr } = await supabase
+    const { data: predictions } = await supabase
       .from('predictions')
       .select('match_id, home_score, away_score, points_earned')
       .eq('user_id', simon.id);
-    console.log('\nSIMON PREDICTIONS COUNT:', predictions?.length);
-    console.log(predictions);
+    const koPredictions = predictions?.filter(p => p.match_id.startsWith('KO-'));
+    console.log('\nSIMON KO PREDICTIONS:');
+    console.log(koPredictions);
   }
 
-  // Get match results for QF and SF (last matches)
-  const { data: results, error: rErr } = await supabase
+  const { data: results } = await supabase
     .from('match_results')
     .select('match_id, home_score, away_score, status, updated_at')
-    .order('match_id', { ascending: false });
-  console.log('\nMATCH RESULTS:');
+    .like('match_id', 'KO-%')
+    .order('match_id', { ascending: true });
+  console.log('\nKO MATCH RESULTS:');
   console.log(results);
 }
 
