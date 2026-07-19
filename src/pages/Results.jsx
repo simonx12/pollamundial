@@ -322,6 +322,7 @@ const Results = () => {
               { key: 'R16', label: 'Octavos' },
               { key: 'QF', label: 'Cuartos' },
               { key: 'SF', label: 'Semifinales' },
+              { key: '3RD', label: 'Tercero' },
               { key: 'F', label: 'Final' },
             ].map((s) => (
               <button

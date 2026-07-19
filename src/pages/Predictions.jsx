@@ -78,7 +78,7 @@ const Predictions = () => {
 
     // Group filter
     if (activeGroup !== 'ALL') {
-      if (['Dieciseisavos', 'Octavos', 'Cuartos', 'Semifinales', 'Final'].includes(activeGroup)) {
+      if (['Dieciseisavos', 'Octavos', 'Cuartos', 'Semifinales', 'Tercero', 'Final'].includes(activeGroup)) {
         matches = matches.filter((m) => m.group === activeGroup);
       } else {
         matches = matches.filter((m) => m.group === `Grupo ${activeGroup}`);
@@ -126,6 +126,7 @@ const Predictions = () => {
     'Octavos', 
     'Cuartos', 
     'Semifinales', 
+    'Tercero',
     'Final'
   ];
 

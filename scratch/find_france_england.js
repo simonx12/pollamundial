@@ -7,6 +7,15 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const worldcupJson = JSON.parse(fs.readFileSync('src/lib/worldcup.json', 'utf-8'));
 
+// Apply virtual match numbers
+worldcupJson.matches.forEach(m => {
+  if (m.round === 'Match for third place' && !m.num) {
+    m.num = 103;
+  } else if (m.round === 'Final' && !m.num) {
+    m.num = 104;
+  }
+});
+
 const TEAM_MAPPING = {
   "Mexico": { name: "México", flag: "🇲🇽", code: "MEX" },
   "South Africa": { name: "Sudáfrica", flag: "🇿🇦", code: "RSA" },
@@ -19,7 +28,7 @@ const TEAM_MAPPING = {
   "Brazil": { name: "Brasil", flag: "🇧🇷", code: "BRA" },
   "Morocco": { name: "Marruecos", flag: "🇲🇦", code: "MAR" },
   "Haiti": { name: "Haití", flag: "🇭🇹", code: "HAI" },
-  "Scotland": { name: "Escocia", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" , code: "SCO" },
+  "Scotland": { name: "Escocia", flag: "🏴" , code: "SCO" },
   "USA": { name: "Estados Unidos", flag: "🇺🇸", code: "USA" },
   "Paraguay": { name: "Paraguay", flag: "🇵🇾", code: "PAR" },
   "Australia": { name: "Australia", flag: "🇦🇺", code: "AUS" },
@@ -52,7 +61,7 @@ const TEAM_MAPPING = {
   "DR Congo": { name: "R. D. Congo", flag: "🇨🇩", code: "COD" },
   "Uzbekistan": { name: "Uzbekistán", flag: "🇺🇿", code: "UZB" },
   "Colombia": { name: "Colombia", flag: "🇨🇴", code: "COL" },
-  "England": { name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" , code: "ENG" },
+  "England": { name: "Inglaterra", flag: "🏴" , code: "ENG" },
   "Croatia": { name: "Croacia", flag: "🇭🇷", code: "CRO" },
   "Ghana": { name: "Ghana", flag: "🇬🇭", code: "GHA" },
   "Panama": { name: "Panamá", flag: "🇵🇦", code: "PAN" }
@@ -179,7 +188,6 @@ const THIRD_PLACE_SLOTS = [
 ];
 
 function assign3rdPlaceToSlots(qualifiedGroups) {
-  // Check if we have the official qualified groups for the 2026 World Cup
   const sortedStr = [...qualifiedGroups].sort().join(',');
   if (sortedStr === 'B,D,E,F,I,J,K,L') {
     return {
@@ -212,13 +220,24 @@ function assign3rdPlaceToSlots(qualifiedGroups) {
   return assigned;
 }
 
+const STAGE_MAPPING = {
+  "Round of 32": { stage: "R32", name: "Dieciseisavos" },
+  "Round of 16": { stage: "R16", name: "Octavos" },
+  "Quarter-final": { stage: "QF", name: "Cuartos" },
+  "Semi-final": { stage: "SF", name: "Semifinales" },
+  "Match for third place": { stage: "3RD", name: "Tercero" },
+  "Final": { stage: "F", name: "Final" }
+};
+
 const MATCH_NUM_TO_ID = {};
 const MATCH_ID_TO_NUM = {};
 const stageCounts = {};
 const stageMap = {
   'Round of 32': 'R32', 'Round of 16': 'R16',
-  'Quarter-final': 'QF', 'Semi-final': 'SF', 'Final': 'F',
+  'Quarter-final': 'QF', 'Semi-final': 'SF',
+  'Match for third place': '3RD', 'Final': 'F',
 };
+
 worldcupJson.matches.forEach(m => {
   if (m.group || !m.num) return;
   const stage = stageMap[m.round];
@@ -292,7 +311,7 @@ async function run() {
 
   const resolvedByNum = {};
   const jsonKnockouts = worldcupJson.matches.filter(m => !m.group && m.num);
-  const stageOrder = ['Round of 32', 'Round of 16', 'Quarter-final', 'Semi-final', 'Final'];
+  const stageOrder = ['Round of 32', 'Round of 16', 'Quarter-final', 'Semi-final', 'Match for third place', 'Final'];
 
   for (const stageName of stageOrder) {
     const stageJsonMatches = jsonKnockouts.filter(m => m.round === stageName);
@@ -303,7 +322,7 @@ async function run() {
     }
   }
 
-  console.log('=== Resolved Matches ===');
+  console.log('=== Standalone Resolved Matches ===');
   stageOrder.forEach(stageName => {
     console.log(`\n--- Stage: ${stageName} ---`);
     jsonKnockouts.filter(m => m.round === stageName).forEach(jm => {
@@ -312,7 +331,7 @@ async function run() {
       const dbResult = resultMap[matchId];
       const resultText = dbResult ? `${dbResult.home_score} - ${dbResult.away_score}` : 'Not Played';
       
-      console.log(`Match ${jm.num} (${matchId}): ${TEAMS[res?.home]?.name || res?.home} vs ${TEAMS[res?.away]?.name || res?.away} | Result: ${resultText}`);
+      console.log(`Match ${jm.num} (${matchId}): ${TEAMS[res?.home]?.name || res?.home} (${res?.home}) vs ${TEAMS[res?.away]?.name || res?.away} (${res?.away}) | Result: ${resultText}`);
     });
   });
 }

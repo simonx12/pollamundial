@@ -5,6 +5,15 @@
 
 import worldcupJson from './worldcup.json';
 
+// Add virtual match numbers for 3rd place and Final if not present in the JSON
+worldcupJson.matches.forEach(m => {
+  if (m.round === 'Match for third place' && !m.num) {
+    m.num = 103;
+  } else if (m.round === 'Final' && !m.num) {
+    m.num = 104;
+  }
+});
+
 // Mapeo oficial de los 48 equipos del Mundial 2026
 export const TEAM_MAPPING = {
   "Mexico": { name: "México", flag: "🇲🇽", code: "MEX" },
@@ -155,7 +164,7 @@ const STAGE_MAPPING = {
   "Round of 16": { stage: "R16", name: "Octavos" },
   "Quarter-final": { stage: "QF", name: "Cuartos" },
   "Semi-final": { stage: "SF", name: "Semifinales" },
-  "Match for third place": { stage: "3RD", name: "Tercer Puesto" },
+  "Match for third place": { stage: "3RD", name: "Tercero" },
   "Final": { stage: "F", name: "Final" }
 };
 
@@ -207,7 +216,6 @@ export function generateKnockoutMatches() {
         
         // El bracket del cliente dibuja R16, QF, SF, F. El tercer puesto lo podemos obviar del bracket visual
         // o mantenerlo por compatibilidad si es necesario.
-        if (stageId === '3RD') return;
 
         if (!stageCounts[stageId]) {
           stageCounts[stageId] = 0;
@@ -250,7 +258,8 @@ function buildMatchNumToIdMap() {
   const counts = {};
   const stageMap = {
     'Round of 32': 'R32', 'Round of 16': 'R16',
-    'Quarter-final': 'QF', 'Semi-final': 'SF', 'Final': 'F',
+    'Quarter-final': 'QF', 'Semi-final': 'SF',
+    'Match for third place': '3RD', 'Final': 'F',
   };
 
   worldcupJson.matches.forEach(m => {
@@ -513,7 +522,7 @@ export function resolveKnockoutMatchTeams(knockoutMatches, matchResults) {
   const resolvedByNum = {};
   const jsonKnockouts = worldcupJson.matches.filter(m => !m.group && m.num);
 
-  const stageOrder = ['Round of 32', 'Round of 16', 'Quarter-final', 'Semi-final', 'Final'];
+  const stageOrder = ['Round of 32', 'Round of 16', 'Quarter-final', 'Semi-final', 'Match for third place', 'Final'];
 
   for (const stageName of stageOrder) {
     const stageJsonMatches = jsonKnockouts.filter(m => m.round === stageName);
